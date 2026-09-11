@@ -1,0 +1,15 @@
+{
+  "at": "2026-09-11T15:01:42.759Z",
+  "browser_rendering_tested": false,
+  "health": true,
+  "react_shell": true,
+  "taskboard": true,
+  "engine_html": true,
+  "engine_asset": true,
+  "react_asset": true,
+  "api_anonymous_denied": true,
+  "env_not_exposed": true,
+  "access_code_not_exposed": true,
+  "upstream_ai_api_disabled": true,
+  "passed": true
+}

@@ -1,0 +1,10 @@
+{
+  "at": "2026-09-11T12:49:16.789Z",
+  "framework": "Pi Agent Core / OpenAI completions adapter",
+  "real_provider": true,
+  "model": "gemini-3-flash",
+  "tool_executions": 1,
+  "text_deltas": 2,
+  "answer": "The living room's name is 客厅 and its unit is cm.",
+  "passed": true
+}

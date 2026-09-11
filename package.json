@@ -1,0 +1,40 @@
+{
+  "name": "renovation-consultation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx apps/api/server.ts",
+    "start": "tsx apps/api/server.ts",
+    "build:web": "vite build --config apps/web/vite.config.ts",
+    "build:engine": "npm --prefix vendor/openplan3d run build",
+    "build": "npm run build:web && npm run build:engine",
+    "check": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:browser": "playwright test",
+    "probe:provider": "tsx scripts/probe-provider.ts"
+  },
+  "dependencies": {
+    "@assistant-ui/react": "0.15.18",
+    "@earendil-works/pi-agent-core": "0.85.1",
+    "@earendil-works/pi-ai": "0.85.1",
+    "@electric-sql/pglite": "0.5.8",
+    "@fastify/cookie": "11.1.2",
+    "@fastify/rate-limit": "11.2.0",
+    "@fastify/static": "10.1.3",
+    "@playwright/test": "1.63.0",
+    "@types/node": "22.20.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "dotenv": "17.4.2",
+    "fastify": "5.12.4",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "tsx": "4.23.13",
+    "typebox": "1.3.30",
+    "typescript": "7.0.2",
+    "vite": "8.3.0",
+    "zod": "4.6.2"
+  }
+}

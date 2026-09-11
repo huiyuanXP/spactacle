@@ -1,0 +1,51 @@
+
+> renovation-consultation@0.1.0 test:browser
+> playwright test tests/browser/03-04-live.spec.ts --reporter=list
+
+[WebServer] (node:621699) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:621714) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:621856) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/browser/03-04-live.spec.ts:4:1 › live consultation: streamed suggestions, explicit adoption, cancellation and reconnect (1.6m)
+
+
+  1) tests/browser/03-04-live.spec.ts:4:1 › live consultation: streamed suggestions, explicit adoption, cancellation and reconnect 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "complete"
+    Received: "failed"
+
+    Call Log:
+    - Timeout 90000ms exceeded while waiting on the predicate
+
+      12 |   await page.getByRole('button',{name:'发送咨询消息',exact:true}).click();
+      13 |   await expect(page.locator('.chat-message.user').filter({hasText:text})).toHaveCount(1);
+    > 14 |   await expect.poll(async () => (await snapshot()).messages.at(-1)?.status,{timeout:90000}).toBe('complete');
+         |                                                                                             ^
+      15 |   let p = await snapshot();
+      16 |   const proposals = p.suggestions.filter((s:any)=>s.status==='proposed' && s.room_id==='living');
+      17 |   expect(proposals.map((s:any)=>s.field_key)).toEqual(expect.arrayContaining(['functions','tone','purpose']));
+        at /home/ubuntu/aws-hackthon/renovation-consultation/tests/browser/03-04-live.spec.ts:14:93
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    .runtime/test-results/03-04-live-live-consultati-b4cc8--cancellation-and-reconnect/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: .runtime/test-results/03-04-live-live-consultati-b4cc8--cancellation-and-reconnect/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    .runtime/test-results/03-04-live-live-consultati-b4cc8--cancellation-and-reconnect/trace.zip
+    Usage:
+
+        npx playwright show-trace .runtime/test-results/03-04-live-live-consultati-b4cc8--cancellation-and-reconnect/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/browser/03-04-live.spec.ts:4:1 › live consultation: streamed suggestions, explicit adoption, cancellation and reconnect 

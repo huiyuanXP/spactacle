@@ -1,0 +1,52 @@
+{
+  "at": "2026-09-11T15:03:22.679809+00:00",
+  "checks": {
+    "http://127.0.0.1:4173/healthz": {
+      "status": 200,
+      "service": "renovation-workbench"
+    },
+    "http://127.0.0.1:4173/": {
+      "status": 200
+    },
+    "http://127.0.0.1:4173/todo": {
+      "status": 200
+    },
+    "http://127.0.0.1:4173/todo/api/board": {
+      "status": 200,
+      "tickets": 16
+    },
+    "http://127.0.0.1:4173/api/projects": {
+      "status": 401
+    },
+    "http://127.0.0.1:4173/.env": {
+      "status": 404
+    },
+    "http://127.0.0.1:4173/.data/owner-access-code": {
+      "status": 404
+    },
+    "https://prod.huiyuanxp.com/healthz": {
+      "status": 200,
+      "service": "renovation-workbench"
+    },
+    "https://prod.huiyuanxp.com/": {
+      "status": 200
+    },
+    "https://prod.huiyuanxp.com/todo": {
+      "status": 200
+    },
+    "https://prod.huiyuanxp.com/todo/api/board": {
+      "status": 200,
+      "tickets": 16
+    },
+    "https://prod.huiyuanxp.com/api/projects": {
+      "status": 401
+    },
+    "https://prod.huiyuanxp.com/.env": {
+      "status": 404
+    },
+    "https://prod.huiyuanxp.com/.data/owner-access-code": {
+      "status": 404
+    }
+  },
+  "passed": true
+}

@@ -1,0 +1,5 @@
+PASS: five choices, no preselection, selection alone does not save, explicit B saves one field
+PASS: free text uses E and is persisted unchanged
+PASS: stale version blocks saving and keeps draft until explicit re-review
+PASS: unknown remains null, not a guessed answer
+PASS: 375px layout has no horizontal overflow; text focus locks scene keyboard

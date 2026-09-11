@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "real_provider": true,
+  "proposal_fields": [
+    "purpose",
+    "functions",
+    "tone"
+  ],
+  "explicit_group_scope": "仅采用以下 3 个字段：用途、功能关键词、色调。其他字段和 3D 几何保持不变。",
+  "cancelled_input_retained": true,
+  "reconnected_without_duplicate": true,
+  "budget": null
+}

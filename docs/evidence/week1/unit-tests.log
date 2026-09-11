@@ -1,0 +1,27 @@
+
+> renovation-consultation@0.1.0 test
+> tsx --test tests/*.test.ts
+
+✔ 02: per-room persistence, cm geometry vs target meters, unknown budget and scope validation (5092.043238ms)
+✔ 04: explicit scoped adoption, idempotency, stale hand-edit protection and group rollback (2968.008118ms)
+✔ 04: five question groups, max two questions, no repeat of answered/unknown/skipped fields (3.113226ms)
+✔ 05: fixed original evidence, unknown budget scope, professional checks, retained stale reports (3341.568144ms)
+✔ 03: provider failure preserves user input and replay does not create another run (3669.615024ms)
+✔ 03: cancellation during model initialization preserves input; outbox replay is strictly ordered (3909.75427ms)
+✔ native scene persists IDs/attributes; unauthorized access, version conflict, idempotency and rollback (5794.399541ms)
+✔ intake v1: every existing field has exactly A+B+C+D and free input; generation is read only (6.335911ms)
+✔ intake v1: same-room information guides recommendation; other room and unscoped evidence do not leak (1.499924ms)
+✔ intake v1: missing facts have no fabricated amount, dimension, currency or household (1.546783ms)
+✔ intake v1: arbitrary free response is one field only; skipped answers are not repeated (1.400615ms)
+✔ intake v1: existing evidence-backed proposal keeps its adoption ID; mismatched-room references rejected (0.894695ms)
+✔ intake v1: existing answer route persists choices with idempotency and optimistic-concurrency protection (6134.591912ms)
+✔ spoken unknown answers are pending, traceable, not re-asked and cannot overwrite manual input (4.815776ms)
+✔ canonical JSON ignores PostgreSQL object-key order without ignoring changed values or array order (0.512981ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 39409.935271

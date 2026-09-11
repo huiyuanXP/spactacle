@@ -1,0 +1,57 @@
+{
+  "at": "2026-09-11T13:14:17.722Z",
+  "synthetic_fixture": true,
+  "real_provider": true,
+  "designer_interview_conducted": false,
+  "chat_status": "complete",
+  "stream_events": 2,
+  "proposals": 1,
+  "proposal_fields": [
+    "functions"
+  ],
+  "no_implicit_adoption": true,
+  "explicit_adoption": true,
+  "review_status": "独立 Pi 审查完成",
+  "review_findings": [
+    {
+      "category": "缺口",
+      "text": "总预算尚不确定；不能据此给出已获批准的采购或施工价格。",
+      "evidence_ids": []
+    },
+    {
+      "category": "缺口",
+      "text": "预算币种或包含范围未知，需要确认是否含施工、家具、家电与税费。",
+      "evidence_ids": []
+    },
+    {
+      "category": "专业复核",
+      "text": "客厅：场景是演示几何，目标尺寸也不是现场测量认证。尺寸、结构和施工条件仍需专业人员核实。",
+      "evidence_ids": []
+    },
+    {
+      "category": "专业复核",
+      "text": "房间 2：场景是演示几何，目标尺寸也不是现场测量认证。尺寸、结构和施工条件仍需专业人员核实。",
+      "evidence_ids": []
+    },
+    {
+      "category": "待决策",
+      "text": "尚未明确共同决策人及最终确认方式。",
+      "evidence_ids": []
+    },
+    {
+      "category": "缺口",
+      "text": "项目总预算（budget）目前状态为未知（unknown），尚未确认具体预算金额。",
+      "evidence_ids": [
+        "ac56a1c9-e274-44fd-811a-811b4abf5464"
+      ]
+    },
+    {
+      "category": "缺口",
+      "text": "房间 2（room2）尚未明确功能定位及任何相关设计需求。",
+      "evidence_ids": []
+    }
+  ],
+  "original_evidence_count": 2,
+  "unknown_budget_preserved": true,
+  "passed": true
+}

@@ -1,0 +1,61 @@
+{
+  "at": "2026-09-11T13:07:19.920Z",
+  "synthetic_fixture": true,
+  "real_provider": true,
+  "designer_interview_conducted": false,
+  "chat_status": "complete",
+  "stream_events": 1,
+  "proposals": 1,
+  "no_implicit_adoption": true,
+  "review_status": "独立 Pi 审查完成",
+  "review_findings": [
+    {
+      "category": "缺口",
+      "text": "总预算尚不确定；不能据此给出已获批准的采购或施工价格。",
+      "evidence_ids": []
+    },
+    {
+      "category": "缺口",
+      "text": "预算币种或包含范围未知，需要确认是否含施工、家具、家电与税费。",
+      "evidence_ids": []
+    },
+    {
+      "category": "专业复核",
+      "text": "客厅：场景是演示几何，目标尺寸也不是现场测量认证。尺寸、结构和施工条件仍需专业人员核实。",
+      "evidence_ids": []
+    },
+    {
+      "category": "专业复核",
+      "text": "房间 2：场景是演示几何，目标尺寸也不是现场测量认证。尺寸、结构和施工条件仍需专业人员核实。",
+      "evidence_ids": []
+    },
+    {
+      "category": "待决策",
+      "text": "尚未明确共同决策人及最终确认方式。",
+      "evidence_ids": []
+    },
+    {
+      "category": "待决策",
+      "text": "仍有未采用的 AI 建议；这些建议不计入已确认需求。",
+      "evidence_ids": []
+    },
+    {
+      "category": "缺口",
+      "text": "客厅功能需求未录入：用户明确提出客厅需兼顾亲子活动、阅读以及衣物和尿布收纳功能，但需求列表中未包含客厅的 functions 字段需求。",
+      "evidence_ids": [
+        "0763a8a6-6fdc-4979-9f2c-5fecd4647fa6"
+      ]
+    },
+    {
+      "category": "缺口",
+      "text": "整体预算未确定：表单与对话记录均显示预算暂不确定（budget 为 null / unknown），缺乏具体的装修预算范围。",
+      "evidence_ids": [
+        "2d15217d-6afe-4ad0-bfb9-51e96b302773",
+        "0763a8a6-6fdc-4979-9f2c-5fecd4647fa6"
+      ]
+    }
+  ],
+  "original_evidence_count": 2,
+  "unknown_budget_preserved": true,
+  "passed": false
+}

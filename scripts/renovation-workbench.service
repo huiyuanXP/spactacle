@@ -1,0 +1,23 @@
+[Unit]
+Description=Renovation consultation workbench
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/aws-hackthon/renovation-consultation
+Environment=NODE_ENV=production
+Environment=PORT=4173
+Environment=APP_ORIGIN=https://prod.huiyuanxp.com
+ExecStart=/bin/bash /home/ubuntu/aws-hackthon/renovation-consultation/scripts/run-workbench.sh
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=45
+KillSignal=SIGTERM
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

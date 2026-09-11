@@ -1,0 +1,14 @@
+{
+  "at": "2026-09-11T15:06:06.050Z",
+  "passed": true,
+  "verification_origin": "http://127.0.0.1:4173",
+  "public_origin": "https://prod.huiyuanxp.com",
+  "authenticated_session_persisted": true,
+  "project_listing_unchanged": true,
+  "project_count": 0,
+  "project_listing_sha256": "46a926de2121dfc5e3e5c1c9430c5ec5235c1f0e5a32277765aab35e6536b8b4",
+  "process_replaced": true,
+  "service": "renovation-workbench",
+  "asset_status": 200,
+  "enabled": "enabled"
+}
