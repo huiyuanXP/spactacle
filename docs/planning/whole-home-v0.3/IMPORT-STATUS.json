@@ -1,0 +1,36 @@
+{
+  "status": "partial_waiting_for_original_zip",
+  "document_version": "v0.3-planning",
+  "run_id": "whole-home-v0.3-20260913T183528Z-009e0cfd",
+  "scope": "documentation archive and navigation only",
+  "expected_original_file_count": 51,
+  "complete_original_files_present": [
+    "package/README.md",
+    "package/FILE_CHECKS.md",
+    "package/editable/sources.md",
+    "package/editable/decisions.json"
+  ],
+  "unmodified_source_fragments": [
+    "source-parts/01_project_status.body.md",
+    "source-parts/02_implementation_plan.body.md",
+    "source-parts/checklist-header.md",
+    "source-parts/scenarios-01.json",
+    "source-parts/scenarios-02.json",
+    "source-parts/scenarios-03.json"
+  ],
+  "missing_original_files": {
+    "pdfs": 3,
+    "embedded_html": 1,
+    "pngs": 36,
+    "other_text_files": 7
+  },
+  "original_zip_on_server": false,
+  "binary_transfer_complete": false,
+  "complete_package_verified": false,
+  "new_scope_implementation_accepted": false,
+  "product_ticket_states_changed": false,
+  "deployment_performed_this_run": false,
+  "assembly_command": "blocked before execution; no assembled outputs or assembly verification receipt created",
+  "next_action": "Upload the original ZIP through the existing SSH/SFTP channel to incoming/, then verify against SOURCE-MANIFEST.json before importing.",
+  "original_zip_sha256": "a505d4de4df08ef3813211f756582c6f832b3886fe04581167696163aabf6167"
+}
