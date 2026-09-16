@@ -158,7 +158,7 @@
 <svelte:head><title>OpenPlan3D · ROOMNOTE</title></svelte:head>
 <div class="embedded">
   {#if loaded}
-    {#if mode==='3d'}<ThreeViewer embedded={true} bind:this={viewer}/>{:else}<FloorPlanCanvas bind:this={canvas}/>{/if}
+    {#if mode==='3d'}<ThreeViewer embedded={true} onprojection={(p)=>{if(loaded)emit("projection",crypto.randomUUID(),p);}} bind:this={viewer}/>{:else}<FloorPlanCanvas bind:this={canvas}/>{/if}
   {:else}<div class="loading">{error || '正在连接 3D 工作台…'}</div>{/if}
 </div>
 <style>

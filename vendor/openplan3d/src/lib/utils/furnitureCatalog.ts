@@ -1,4 +1,4 @@
-import type { FurnitureItem } from '$lib/models/types';
+import type { FurnitureItem } from '../models/types';
 
 export interface FurnitureDef {
   id: string;

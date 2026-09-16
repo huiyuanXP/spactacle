@@ -101,6 +101,7 @@ export interface Window {
 }
 
 export interface FurnitureItem {
+  elevation?: number;
   details?: ItemDetails;
   id: string;
   catalogId: string;

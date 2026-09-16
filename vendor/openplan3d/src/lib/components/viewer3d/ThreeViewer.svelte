@@ -33,7 +33,8 @@
   import { getWallTextureCanvas, getFloorTextureCanvas, setTextureLoadCallback } from '$lib/utils/textureGenerator';
 
   let container: HTMLDivElement;
-  let { embedded = false } = $props<{ embedded?: boolean }>();
+  let { embedded = false, onprojection } = $props<{ embedded?: boolean; onprojection?: (value:any)=>void }>();
+  function emitProjection(){if(!embedded||!camera||!container)return; onprojection?.({width:container.clientWidth,height:container.clientHeight,objects:currentFloor?.furniture.map(fi=>{const p=new THREE.Vector3(fi.position.x,activeFloorElevation+(fi.elevation??0)+(fi.height??50)/2,fi.position.y).project(camera);return {id:fi.id,x:(p.x+1)*container.clientWidth/2,y:(1-p.y)*container.clientHeight/2,visible:p.z>=-1&&p.z<=1};})??[]});}
 
   // Controlled adapter methods. These are project additions, not upstream APIs.
   export function focusBounds(b: { x: number; y: number; width: number; depth: number }) {
@@ -63,10 +64,18 @@
   export function inspectCamera() {
     return { position: camera?.position.toArray(), target: controls?.target.toArray(),
       walkthrough: walkthroughMode, width: container?.clientWidth, height: container?.clientHeight,
+      referenceLabels:wallGroup?.children.filter(c=>c.userData.referenceLabel).map(c=>c.userData.referenceLabel)||[],
       ready: viewerMounted, geometry: wallGroup?.children.length || 0,
       objects: currentFloor?.furniture.map(fi => {
         const point = new THREE.Vector3(fi.position.x, (fi.height ?? 50) / 2, fi.position.y).project(camera);
-        return { id: fi.id, x: (point.x + 1) * container.clientWidth / 2, y: (1 - point.y) * container.clientHeight / 2 };
+        const model = wallGroup?.children.find(c => c.userData.objectId === fi.id);
+        const bounds = model ? new THREE.Box3().setFromObject(model) : null;
+        const colors: string[] = [], highlighted: string[] = [];
+        model?.traverse(c => { if (c instanceof THREE.Mesh) for (const m of (Array.isArray(c.material) ? c.material : [c.material])) {
+          if (m.color) colors.push('#' + m.color.getHexString());
+          if (m.emissive?.getHex()) highlighted.push(c.userData.objectId);
+        }});
+        return { id: fi.id, bounds: bounds ? {min:bounds.min.toArray(),max:bounds.max.toArray(),size:bounds.getSize(new THREE.Vector3()).toArray()} : null, colors:[...new Set(colors)], highlighted:[...new Set(highlighted)], x: (point.x + 1) * container.clientWidth / 2, y: (1 - point.y) * container.clientHeight / 2 };
       }) || [] };
   }
   let renderer: THREE.WebGLRenderer;
@@ -1560,6 +1569,12 @@
       if (!cat) continue;
       // Skip 2D-only architectural symbols
       if (cat.symbol) continue;
+      if (embedded && (fi as any).reference_status === 'pending') {
+        const canvas = document.createElement('canvas');canvas.width=256;canvas.height=64;
+        const context=canvas.getContext('2d')!;context.fillStyle='#fff7d6';context.fillRect(0,0,256,64);context.fillStyle='#574b2a';context.font='bold 30px sans-serif';context.textAlign='center';context.fillText('未采用 · 参考',128,43);
+        const label=new THREE.Sprite(new THREE.SpriteMaterial({map:ownTexture(Object.assign(new THREE.CanvasTexture(canvas),{colorSpace:THREE.SRGBColorSpace})),depthTest:false,toneMapped:false}));
+        label.position.set(fi.position.x,(fi.height??cat.height)+30,fi.position.y);label.scale.set(145,36,1);label.userData.referenceLabel=fi.id;wallGroup.add(label);
+      }
       // Create modified catalog definition with overrides
       const furnitureDef = {
         ...cat,
@@ -1573,8 +1588,28 @@
         // Re-render when GLB model finishes loading
         markSceneDirty();
       }, { color: fi.color, material: fi.material });
-      if (embedded) model.traverse(child => { child.userData.objectId = fi.id; });
-      model.position.set(fi.position.x, 1.5, fi.position.y);
+      if (embedded) {
+        // Normalize procedural parts to the formal physical dimensions before placement.
+        const bounds = new THREE.Box3().setFromObject(model);
+        const extent = bounds.getSize(new THREE.Vector3());
+        if (extent.x > 0 && extent.y > 0 && extent.z > 0) {
+          const sx = furnitureDef.width / extent.x, sy = furnitureDef.height / extent.y, sz = furnitureDef.depth / extent.z;
+          model.scale.set(sx, sy, sz);
+          const normalized = new THREE.Box3().setFromObject(model);
+          const offset = normalized.getCenter(new THREE.Vector3());
+          const wrapper = new THREE.Group();
+          model.position.set(-offset.x, -normalized.min.y, -offset.z);
+          wrapper.add(model);
+          wrapper.scale.set(fi.scale?.x ?? 1, 1, fi.scale?.y ?? 1);
+          wrapper.userData.objectId = fi.id;
+          wrapper.position.set(fi.position.x, 1.5 + (fi.elevation ?? 0), fi.position.y);
+          wrapper.rotation.y = -(fi.rotation * Math.PI) / 180;
+          wrapper.traverse(child => { child.userData.objectId = fi.id; });
+          wallGroup.add(wrapper);
+          continue;
+        }
+      }
+      model.position.set(fi.position.x, 1.5 + (fi.elevation ?? 0), fi.position.y);
       model.rotation.y = -(fi.rotation * Math.PI) / 180;
       // Note: fi.scale is 2D editor scale — don't override 3D model scaling from scaleToFit
       if (fi.scale && (fi.scale.x !== 1 || fi.scale.y !== 1)) {
@@ -1999,6 +2034,7 @@
       if (sceneDirty || moving) {
         sceneDirty = false;
         renderer.render(scene, camera);
+        emitProjection();
       }
       if (walkthroughMotion.active) requestRender();
       else walkthroughMotion.stopClock();
@@ -2009,6 +2045,7 @@
       if (sceneDirty) {
         sceneDirty = false;
         renderer.render(scene, camera);
+        emitProjection();
       }
     }
   }
@@ -2026,6 +2063,7 @@
   function takeScreenshot() {
     if (!renderer || !scene || !camera) return;
     renderer.render(scene, camera);
+        emitProjection();
     const dataUrl = renderer.domElement.toDataURL('image/png');
     const link = document.createElement('a');
     link.download = 'floorplan-3d.png';
@@ -2068,6 +2106,15 @@
     const unsubSel = selectedElementId.subscribe((id) => {
       selectedWallId3D = id;
       wallHighlight.apply(wallMeshMap, id);
+      wallGroup?.traverse(child => {
+        if (child instanceof THREE.Mesh && child.userData.objectId) {
+          const materials = Array.isArray(child.material) ? child.material : [child.material];
+          for (const mat of materials) if (mat instanceof THREE.MeshStandardMaterial) {
+            mat.emissive.set(child.userData.objectId === id ? '#397951' : '#000000');
+            mat.emissiveIntensity = child.userData.objectId === id ? 0.45 : 0;
+          }
+        }
+      });
       markSceneDirty();
     });
 
