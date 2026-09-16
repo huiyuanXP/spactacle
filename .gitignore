@@ -19,3 +19,7 @@ node_modules/
 .prod-tunnel.log
 .prod-tunnel.pid
 !docs/evidence/week1/*.log
+
+# Python-generated caches
+__pycache__/
+*.py[cod]
