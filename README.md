@@ -1,12 +1,21 @@
 # Renovation Consultation
 
+Codex 的 MCP 调用、内层 workspace-write 执行和浏览器链路已接通。既有 Week 1 验收委派入口：`python3 scripts/codex_acceptance.py run`；它仍是 Week 1 范围，不能冒充 Week 2 全套验收。协议见 [docs/CODEX-DELEGATION.md](docs/CODEX-DELEGATION.md)，最新结果以 [CURRENT](docs/handoffs/CURRENT.md) 为准。
+
 装修咨询与可编辑 3D 房间工作台。项目根目录：`/home/ubuntu/aws-hackthon/renovation-consultation`。
 
-## 当前实现（2026-09-11）
+## 当前实现（2026-09-15）
 
-Week 1 工作台已正式部署到 [prod.huiyuanxp.com](https://prod.huiyuanxp.com)，[开发看板 /todo](https://prod.huiyuanxp.com/todo) 持续保留。服务由 systemd 监管并已启用开机启动，隧道未变更。01–05 已按实际浏览器、接口与模型证据验收完成；未开始 Week 2。
+Agent / intake v2 已正式部署到 [prod.huiyuanxp.com](https://prod.huiyuanxp.com)，[开发看板 /todo](https://prod.huiyuanxp.com/todo) 保留。包含统一多模态输入、60题渐进问卷、证据推荐与明确确认、业主/设计师交付清单，以及原有 Week2 工作台。使用说明见 [AGENT-INTAKE-V2](docs/AGENT-INTAKE-V2.md)。不代表全屋几何或Ticket14已完成。
+
+生产冻结版本 `/opt/renovation-workbench/releases/intake-v2-20260915T083433Z/app`；完整Week2回退包和停写一致性备份已验证。48/48逻辑/API、类型检查、构建通过；浏览器完整套件12/14，随后两项定向复验2/2，14个场景均有通过记录，初始失败保留。冻结启动、数据副本兼容、42组本机/公网检查通过；原会话、1个业主项目和1个附件保留。coding-tools-mcp未重置或重启，隧道和4173不变。回执 `.runtime/deploy-receipts/intake-v2-20260915T083433Z/result.json`；测试仍仅使用4175和专用测试数据。
 
 先读 [当前交接](docs/handoffs/CURRENT.md)、[部署与回滚](docs/DEPLOYMENT.md) 和 [验证索引](docs/WEEK1-VALIDATION.md)。登录口令保存在私有 `.data/owner-access-code`。生产运行时不要再用默认预览命令打开同一份数据库；浏览器测试只用专用 4175 与测试数据。
+
+## 全屋版规划资料
+
+[全屋版 v0.3-planning 归档入口](docs/planning/whole-home-v0.3/README.md)：状态文章和实施计划正文、36个UI场景数据、16项全局确认及来源索引已保存；完整ZIP、PDF、HTML和36张PNG尚待传入，实际进度见归档入口。这里是待细化确认的范围资料，不替代现有Spec/PLAN、固定票号或验收状态。原稿中旧的待部署描述由[归档状态补充](docs/planning/whole-home-v0.3/STATUS-UPDATE.md)明确更新，Week2既有生产发布不受影响。
+
 
 ## 新对话如何继续
 

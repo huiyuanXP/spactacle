@@ -1,3 +1,7 @@
+## 2026-09-15 production update — Agent / intake v2
+
+Scoped03/04/05/09 extension and07 correction deployed as `intake-v2-20260915T083433Z`. Historical phase validation remains below; current release evidence, failures and boundaries are in `AGENT-INTAKE-V2.md`, operating/rollback paths in `../DEPLOYMENT.md`.48/48 unit/API, typecheck/build,14 distinct browser scenarios via12/14+2/2, frozen startup, consistent backup and42 production verification groups passed. No whole-house/Ticket14 completion or MCP reset is implied.
+
 # Phase 0 — 第1周 v0.2
 状态：Week 1 的 01–05 已逐票验收完成，正式工作台已部署。完整证据见 `CURRENT.md`、`../WEEK1-VALIDATION.md`；运维见 `../DEPLOYMENT.md`。
 

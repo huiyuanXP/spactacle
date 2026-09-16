@@ -1,5 +1,9 @@
+## 2026-09-15 production update — Agent / intake v2
+
+Scoped03/04/05/09 extension and07 correction deployed as `intake-v2-20260915T083433Z`. Historical phase validation remains below; current release evidence, failures and boundaries are in `AGENT-INTAKE-V2.md`, operating/rollback paths in `../DEPLOYMENT.md`.48/48 unit/API, typecheck/build,14 distinct browser scenarios via12/14+2/2, frozen startup, consistent backup and42 production verification groups passed. No whole-house/Ticket14 completion or MCP reset is implied.
+
 # Phase 1 — 第2周 v0.2
-状态：待实现；本轮仅重生成计划与tickets。
+状态：2026-09-13 第二阶段代码验收完成，06–10 done；已于17:00 UTC受控发布到生产4173，PID990931。
 
 ## 本周目标
 家具参数/局部聊天/AI参考家具与几何警告形成闭环。
@@ -16,8 +20,13 @@
 本周需覆盖草图的对应交互并保存验证记录。无AI生图；3D由OpenPlan3D实现。
 
 ## 实际交接记录
-- 已完成：本次计划和ticket生成。
-- 应用实现：未开始。
-- 验证：文档结构和依赖检查；产品功能验收未执行。
-- 下一步：读取活动指令、真实仓库状态和依赖证据，选择未阻塞ticket编译Goal。
-- 人工阻塞：设计师访谈、专业安全核实不冒充已完成。
+
+实现家具属性编辑、对象绑定Pi聊天/预览/确认、白名单参考家具、图片/语音输入及证据确认、随相机投影的几何问题与历史。独立Codex只读审查后，协调者复现并修复四处一致性缺陷；浏览器另外发现并修复手机抽屉遮挡聊天入口。
+
+最终TypeScript和31项逻辑/API通过，13项Python回执契约通过。浏览器10个用例都有新通过证据：完整套件9通过/1失败（09旧断言读不到input.value），强化为真实输入值及持久化/证据断言后09单项1/1通过；没有将失败报告伪写为完整10/10。真实模型用于咨询、家具提议、参考家具、图片像素和公开WAV转写，配置由现有.env读取且未输出凭证。
+
+验证索引：`../WEEK2-VALIDATION.md`。最终证据：`.runtime/codex-runs/week2-final-20260913T143835Z-8483a6/evidence/coordinator-review.json`，前置独立审查和四项旧代码失败记录在week2-closeout-20260913T142523Z-5c2e72。Git HEAD5d77da1，源码未提交；最终fingerprint3d3c20ae3c633641d362a44a0359e27fb60b64aaebe1341c62710192c3e450d4。
+
+候选构建保留在`.runtime/week2-release/{web,engine}`；原代码验收只用4175+合成数据。后续已单独授权并完成宿主机发布，生产运行 `/opt/renovation-workbench/releases/week2-20260913T160456Z/week2`，服务仍为ubuntu。停写备份和完整Week1回退均已验证；原会话与1个业主项目保留，公网资源、/todo、API及数据检查通过。首次失败与完整旧版恢复如实记录，最终回执 `.runtime/deploy-receipts/week2-20260913T160456Z/result.json`。原工作区构建、源码修改及Week1证据保留，隧道未变；Week3不自动开始。回滚使用冻结Week1全版本并保留当前数据库，详见DEPLOYMENT.md。
+
+限制：材质贴图替换禁用；参考资产白名单；外部图片链接提示上传；录音用模拟音源验证真实编码/上传链路而非实体硬件，实际WAV模型转写另验。窄屏密集标签仍可能重叠；无真实手机软键盘验收。几何非工程安全认证，设计师访谈未开展。
