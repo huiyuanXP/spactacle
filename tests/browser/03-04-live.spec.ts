@@ -1,6 +1,7 @@
 import {test, expect} from '@playwright/test';
 import {writeFileSync} from 'node:fs';
 import {login} from './helpers.js';
+import { evidencePath } from './evidence.js';
 test('live consultation: streamed suggestions, explicit adoption, cancellation and reconnect', async ({page, context}) => {
   test.setTimeout(180000);
   await login(page);
@@ -52,5 +53,5 @@ test('live consultation: streamed suggestions, explicit adoption, cancellation a
   await expect(page.locator('.chat-message.user').filter({hasText:cancelText})).toHaveCount(1);
   p=await snapshot();
   expect(new Set(p.messages.map((m:any)=>m.id)).size).toBe(p.messages.length);
-  writeFileSync('docs/evidence/week1/live-browser.json', JSON.stringify({passed:true,synthetic:true,real_provider:true,proposal_fields:proposals.map((s:any)=>s.field_key),explicit_group_scope:adoptedScope,cancelled_input_retained:true,reconnected_without_duplicate:true,budget:p.requirements.find((r:any)=>r.field_key==='budget')?.value},null,2));
+  writeFileSync(evidencePath('live-browser.json'), JSON.stringify({passed:true,synthetic:true,real_provider:true,proposal_fields:proposals.map((s:any)=>s.field_key),explicit_group_scope:adoptedScope,cancelled_input_retained:true,reconnected_without_duplicate:true,budget:p.requirements.find((r:any)=>r.field_key==='budget')?.value},null,2));
 });

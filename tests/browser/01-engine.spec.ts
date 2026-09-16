@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import { login, bridge } from "./helpers.js";
+import { evidencePath } from "./evidence.js";
 test("real OpenPlan3D: rendering, navigation, selection, native JSON save/reload and responsive layout", async ({
   page,
 }) => {
@@ -28,6 +29,7 @@ test("real OpenPlan3D: rendering, navigation, selection, native JSON save/reload
   const sofa = camera.objects.find((o: any) => o.id === "sofa-main");
   await page.frameLocator("iframe").locator("canvas").first().click({position: {x: sofa.x, y: sofa.y}});
   await expect(page.locator(".selection")).toContainText("sofa-main");
+  await page.getByRole("button", { name: "关闭家具属性", exact: true }).click();
   await page.getByRole("button", { name: "预览鼠尾草绿", exact: true }).click();
   await expect(page.locator(".project-name")).toContainText("尚未保存");
   await page.getByRole("button", { name: "保存项目", exact: true }).click();
@@ -65,7 +67,7 @@ test("real OpenPlan3D: rendering, navigation, selection, native JSON save/reload
   await bridge(page, "mode", {mode: "3d"});
   await bridge(page, "focus", {room_id: "living"});
   await page.screenshot({
-    path: "docs/evidence/week1/01-desktop.png",
+    path: evidencePath("01-desktop.png"),
     fullPage: true,
   });
   for (const width of [768, 375]) {
@@ -76,7 +78,7 @@ test("real OpenPlan3D: rendering, navigation, selection, native JSON save/reload
       )
       .toBe(true);
     await page.screenshot({
-      path: `docs/evidence/week1/01-${width}.png`,
+      path: evidencePath(`01-${width}.png`),
       fullPage: true,
     });
   }
@@ -90,7 +92,7 @@ test("real OpenPlan3D: rendering, navigation, selection, native JSON save/reload
     .poll(async () => (await bridge(page, "inspect", {})).camera?.ready)
     .toBe(true);
   writeFileSync(
-    "docs/evidence/week1/01-engine-results.json",
+    evidencePath("01-engine-results.json"),
     JSON.stringify(
       {
         initial,

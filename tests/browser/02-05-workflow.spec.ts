@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { login, bridge } from './helpers.js';
+import { evidencePath } from './evidence.js';
 test('room panel persistence, unchanged geometry, chat draft and stale review', async ({ page }) => {
   await login(page);
   const panel = page.getByRole('complementary', { name: '需求收集面板' });
@@ -40,7 +41,7 @@ test('room panel persistence, unchanged geometry, chat draft and stale review', 
   await page.setViewportSize({width:375,height:812});
   await expect(input).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.screenshot({path:'docs/evidence/week1/03-mobile-chat.png',fullPage:true});
+  await page.screenshot({path:evidencePath('03-mobile-chat.png'),fullPage:true});
   await page.setViewportSize({width:1440,height:960});
   await page.getByRole('button', { name: '收起聊天' }).click();
   await page.getByRole('button', { name: /聊聊你的家/ }).click();
@@ -57,5 +58,29 @@ test('room panel persistence, unchanged geometry, chat draft and stale review', 
   await panel.getByRole('button', { name: '保存目标宽度（米）', exact: true }).click();
   await page.getByRole('button', { name: '需求任务书', exact: true }).click();
   await expect(dialog).toContainText('报告已过期');
-  await page.screenshot({ path: 'docs/evidence/week1/02-05-brief.png', fullPage: true });
+  await page.screenshot({ path: evidencePath('02-05-brief.png'), fullPage: true });
+});
+
+test('mobile chat entry remains actionable while the requirements drawer is open after reload', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await login(page);
+  await page.reload();
+  const panel = page.getByRole('complementary', { name: '需求收集面板' });
+  const launcher = page.getByRole('button', { name: /聊聊你的家/ });
+  await expect(panel).toBeVisible();
+  await expect(launcher).toBeVisible();
+  await expect.poll(async () => {
+    const button = await launcher.boundingBox();
+    const drawer = await panel.boundingBox();
+    return !!button && !!drawer && button.y + button.height <= drawer.y;
+  }).toBe(true);
+  await page.screenshot({ path: evidencePath('02-mobile-entry-above-drawer.png') });
+  // Normal hit-tested click, never force-click a covered control.
+  await launcher.click();
+  const chat = page.getByRole('region', { name: '客厅咨询聊天', exact: true });
+  await expect(chat).toBeVisible();
+  await expect(chat.getByRole('textbox', { name: '咨询消息' })).toBeVisible();
+  await chat.getByRole('button', { name: '收起聊天' }).click();
+  await launcher.click();
+  await expect(chat).toBeVisible();
 });

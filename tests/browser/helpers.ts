@@ -8,7 +8,10 @@ export async function login(page: Page) {
     data: { code },
   });
   expect(response.status()).toBe(200);
-  await page.goto("/");
+  const created=await page.request.post("/api/projects",{data:{}});
+  expect(created.status()).toBe(200);
+  const project=await created.json();
+  await page.goto(`/?project=${encodeURIComponent(project.id)}`);
   await expect(
     page.getByRole("button", { name: "保存项目", exact: true }),
   ).toBeEnabled();
