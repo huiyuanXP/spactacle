@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {ChatIcon} from './ChatControls.js';
 import type {ProjectData} from '../../../packages/contracts/index.js';
 import type {Commit} from './RequirementsPanel.js';
 export function ObjectChat({project,objectId,roomId,commit,preview,restore,adopt,onBusy}:{project:ProjectData;objectId:string;roomId:string;commit:Commit;preview:(id:string)=>Promise<void>;restore:()=>Promise<void>;adopt:(id:string)=>Promise<void>;onBusy:(b:boolean)=>void}){
@@ -13,6 +14,6 @@ export function ObjectChat({project,objectId,roomId,commit,preview,restore,adopt
  {['running','proposed','failed'].includes(m.status)&&<button disabled={busy&&m.status!=='running'} onClick={()=>{const reject=async()=>{await restore();setPreviewId(null);await commit('/objects/decision',{room_id:roomId,object_id:objectId,message_id:m.id,action:'reject'});};if(m.status==='running')void reject().catch(e=>{if(alive.current)setError(e.message);});else void act(reject);}}>取消此建议</button>}
  </article>)}</div>
  {previewId&&<p role="status">仅预览，尚未保存。关闭或取消会恢复正式场景。</p>}
- <form onSubmit={e=>{e.preventDefault();void act(async()=>{await restore();setPreviewId(null);await commit('/objects/chat',{room_id:roomId,object_id:objectId,text});if(alive.current)setText('');});}}><label>对这件家具的要求<textarea maxLength={4000} required value={text} disabled={busy} onChange={e=>setText(e.target.value)}/></label><button disabled={busy||!text.trim()}>{busy?'正在咨询…':'发送家具要求'}</button></form>
+ <form className="object-composer" onSubmit={e=>{e.preventDefault();void act(async()=>{await restore();setPreviewId(null);await commit('/objects/chat',{room_id:roomId,object_id:objectId,text});if(alive.current)setText('');});}}><label>对这件家具的要求<textarea maxLength={4000} required value={text} disabled={busy} onChange={e=>setText(e.target.value)}/></label><div className="object-composer-tools"><span>仅针对当前家具生成待确认建议</span><button aria-label="发送家具要求" title="发送家具要求" disabled={busy||!text.trim()}><ChatIcon name={busy?'stop':'up'}/></button></div></form>
  {error&&<p role="alert">{error}</p>}</section>;
 }

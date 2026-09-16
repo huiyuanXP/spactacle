@@ -5,7 +5,7 @@ import type { ProjectData } from '../../../packages/contracts/index.js';
 import type { Commit } from './RequirementsPanel.js';
 
 export function IntakeCard({question,project,roomId,answer,commit,keyboard,onDone,onDirty}:{question:IntakeQuestion;project:ProjectData;roomId:string;answer?:IntakeAnswer|null;commit:Commit;keyboard:(v:boolean)=>void;onDone:()=>void;onDirty?:(id:string,dirty:boolean)=>void}) {
-  const uid=useId(),retry=useRef<{fingerprint:string;id:string}|null>(null);
+  const uid=useId(),retry=useRef<{fingerprint:string;id:string}|null>(null),submitting=useRef(false);
   const [frozen,setFrozen]=useState<IntakeQuestion|null>(null),[choice,setChoice]=useState(''),[text,setText]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const [target,setTarget]=useState(''),[ceiling,setCeiling]=useState(''),[currency,setCurrency]=useState('');
   const [mode,setMode]=useState<'private'|'summary'|'selected'>('private'),[sharedQuestions,setSharedQuestions]=useState<string[]>([]),[sharedAttachments,setSharedAttachments]=useState<string[]>([]);
@@ -14,6 +14,8 @@ export function IntakeCard({question,project,roomId,answer,commit,keyboard,onDon
   const dirty=()=>{setFrozen(f=>f??question);setError('');onDirty?.(question.id,true);};
   const choose=(id:string)=>{dirty();setChoice(id);if(q.questionnaire_id==='Q06')setMode(id==='B'?'summary':id==='C'?'selected':'private');};
   async function submit(state?:string) {
+    if(submitting.current)return;
+    submitting.current=true;
     setBusy(true);setError('');
     try{
       const version=frozen?.base_version??question.base_version;
@@ -27,10 +29,10 @@ export function IntakeCard({question,project,roomId,answer,commit,keyboard,onDon
       const fingerprint=JSON.stringify(b);if(retry.current?.fingerprint!==fingerprint)retry.current={fingerprint,id:crypto.randomUUID()};
       await commit('/intake/answer',{...b,request_id:retry.current.id});
       onDirty?.(q.id,false);setFrozen(null);setChoice('');setText('');keyboard(false);onDone();
-    }catch(e){setError((e as Error).message);}finally{setBusy(false);}
+    }catch(e){setError((e as Error).message);}finally{submitting.current=false;setBusy(false);}
   }
   const toggle=(values:string[],id:string)=>values.includes(id)?values.filter(v=>v!==id):[...values,id];
-  return <fieldset className="ask-card intake-card" disabled={busy} data-question-id={q.id} onFocusCapture={()=>keyboard(true)} onBlurCapture={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null))keyboard(false);}}>
+  return <fieldset className="ask-card intake-card intake-design" disabled={busy} data-question-id={q.id} onFocusCapture={()=>keyboard(true)} onBlurCapture={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null))keyboard(false);}}>
     <legend><span className="intake-id">{q.questionnaire_id} · {q.group}</span>{q.text}</legend>
     {answer&&<div className="intake-existing"><b>{answer.confirmation_state==='pending'?'原话提取 · 待你核对':'当前回答'}</b><p>{answer.answer_text||({unknown:'暂不确定',skipped:'已跳过',not_applicable:'不适用'} as Record<string,string>)[answer.answer_state]}</p>{answer.confirmation_state==='pending'&&<button type="button" onClick={()=>{dirty();setChoice('E');setText(answer.answer_text);}}>用这段原话填写，核对后确认</button>}</div>}
     <p className="ask-basis"><b>{q.recommendation.basis==='evidence'?'根据已有信息，我倾向于：':'可供比较的起点：'}{q.recommendation.label}</b><br/>{q.recommendation.rationale}</p>

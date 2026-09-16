@@ -13,12 +13,14 @@ import { buildReview } from "./review.js";
 import { registerIntake } from './intake.js';
 import { registerDelivery } from './delivery.js';
 import { registerDocuments } from './document-routes.js';
+import { listChatModels, resolveModel } from './provider.js';
 export function registerBusiness(app: FastifyInstance, store: Store) {
   registerIntake(app, store);
   registerDelivery(app, store);
   registerDocuments(app, store);
   const chat = new ChatService(store),
     reviews = new Set<string>();
+  app.get('/api/chat/models', async () => listChatModels());
   const identity = (req: any) => ({
     id: Id.parse(req.params.id),
     owner: String(req.owner),
@@ -89,7 +91,10 @@ export function registerBusiness(app: FastifyInstance, store: Store) {
         room_id: Id,
         text: z.string().trim().min(1).max(8000),
         attachment_ids: z.array(Id).max(6).optional(),
+        model_id: z.string().min(1).max(200).optional(),
       }).parse(req.body);
+    // Reject an unlisted selection before persisting a message or starting work.
+    if (b.model_id) await resolveModel(b.model_id);
     return chat.start(id, owner, b);
   });
   app.post("/api/projects/:id/chat/cancel", async (req) => {

@@ -5,6 +5,10 @@ import { api } from "./api.js";
 import "./style.css";
 import "./workbench.css";
 import { Workbench } from "./Workbench.js";
+import './paper.css';
+const paper = location.pathname.replace(/\/$/, '') === '/new-ui';
+document.documentElement.classList.toggle('paper-route',paper);
+try { document.documentElement.dataset.theme=localStorage.getItem('roomnote:paper-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); } catch { document.documentElement.dataset.theme='light'; }
 function Mark() {
   return (
     <svg
@@ -124,7 +128,7 @@ function App() {
     void boot();
   }, []);
   if (auth === false) return <Login onDone={() => void boot()} />;
-  if (project) return <Workbench initial={project} />;
+  if (project) return <Workbench initial={project} paper={paper} />;
   return (
     <div className="boot">
       <Mark />

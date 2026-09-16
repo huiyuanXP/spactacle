@@ -13,14 +13,16 @@ import { ObjectEditor } from "./ObjectEditor.js";
 import {GeometryWarnings} from "./GeometryWarnings.js";
 import { QuestionnairePanel } from './QuestionnairePanel.js';
 import { DeliveryPanel } from './DeliveryPanel.js';
-export function Workbench({ initial }: { initial: ProjectData }) {
+import { ThemeToggle } from './ChatControls.js';
+import { typeEyebrow, typePage, typePackage } from './components/shared/type.js';
+export function Workbench({ initial, paper = false }: { initial: ProjectData; paper?: boolean }) {
   const [project, setProject] = useState(initial),
     [room, setRoom] = useState(initial.rooms[0].id),
     [selected, setSelected] = useState<string | null>(null),
     [editing, setEditing] = useState<string | null>(null),
     [mode, setMode] = useState("3d"),
-    [panel, setPanel] = useState(true),
-    [chat, setChat] = useState(false),
+    [panel, setPanel] = useState(!paper),
+    [chat, setChat] = useState(paper),
     [brief, setBrief] = useState(false),
     [questionnaire, setQuestionnaire] = useState(false),
     [delivery, setDelivery] = useState(false),
@@ -232,13 +234,14 @@ export function Workbench({ initial }: { initial: ProjectData }) {
       setApplying(false);
     }
   };
-  const send = async (text: string, roomId: string, attachmentIds?:string[]) => {
+  const send = async (text: string, roomId: string, attachmentIds?:string[], modelId?:string) => {
     try {
       const result = await api<{ project: ProjectData }>(
         `/api/projects/${project.id}/chat`,
         {
           room_id: roomId,
           text,
+          ...(modelId ? {model_id:modelId} : {}),
           ...(attachmentIds?.length?{attachment_ids:attachmentIds}:{}),
           expected_version: current.current.version,
           request_id: crypto.randomUUID(),
@@ -253,8 +256,10 @@ export function Workbench({ initial }: { initial: ProjectData }) {
   const cancel = async (runId: string) => {
     await api(`/api/projects/${project.id}/chat/cancel`, { run_id: runId });
   };
+  const conversations = project.rooms.map(r=><ChatWindow key={r.id} project={project} roomId={r.id} visible={chat&&r.id===room} docked={paper} onClose={()=>setChat(false)} onSend={send} commit={commit} onCancel={cancel} keyboard={keyboard} toolStatus={toolStatus} onError={setError} onQuestionnaire={()=>setQuestionnaire(true)} onDelivery={()=>setDelivery(true)}/>);
+  const activeRoom=project.rooms.find(r=>r.id===room)!;
   return (
-    <div className="workbench">
+    <div className={`workbench${paper?' paper-ui':''}`} data-chat-open={chat}>
       <header className="topbar">
         <a className="brand" href="/" aria-label="ROOMNOTE 首页">
           <svg width="27" height="27" viewBox="0 0 28 28" fill="none">
@@ -296,6 +301,7 @@ export function Workbench({ initial }: { initial: ProjectData }) {
           ))}
         </div>
         <div className="nav-actions">
+          {paper?<ThemeToggle/>:<a href={`/new-ui?project=${encodeURIComponent(project.id)}`}>新版工作台 ↗</a>}
           <a href="/todo" target="_blank" rel="noreferrer">
             开发看板 ↗
           </a>
@@ -311,7 +317,9 @@ export function Workbench({ initial }: { initial: ProjectData }) {
         </div>
       </header>
       <main className="workspace" data-panel-open={panel}>
+        {paper&&<nav className="paper-rail" aria-label="空间与设计资料"><div><span className={typeEyebrow}>你的空间</span>{project.rooms.map((r,index)=><button type="button" key={r.id} className={r.id===room?'active':''} aria-current={r.id===room?'page':undefined} onClick={()=>void run(()=>focus(r.id))}><span className={typePackage}>{String(index+1).padStart(2,'0')}</span>{r.name}</button>)}</div><div><span className={typeEyebrow}>把想法落到纸上</span><button type="button" onClick={()=>setPanel(v=>!v)}>需求记录</button><button type="button" onClick={()=>setQuestionnaire(true)}>逐项确认</button><button type="button" onClick={()=>setDelivery(true)}>交付清单</button></div><div className="rail-bottom"><p>建议与正式值分开。<br/>每一次改变，由你确认。</p><a href={`/?project=${encodeURIComponent(project.id)}`}>原版工作台 ↗</a></div></nav>}
         <section className="scene">
+          {paper&&<div className="paper-scene-heading"><div><span className={typeEyebrow}>fig. 01 / 可编辑空间</span><h1 className={typePage}>让{activeRoom.name}更贴近你的生活。</h1></div><span className={typePackage}>{(activeRoom.geometry_cm.width/100).toFixed(1)} × {(activeRoom.geometry_cm.depth/100).toFixed(1)} m</span></div>}
           <iframe
             ref={bridge.frame}
             src={`/engine/embed?project=${encodeURIComponent(project.id)}`}
@@ -442,26 +450,11 @@ export function Workbench({ initial }: { initial: ProjectData }) {
             aria-expanded={chat}
             onClick={() => setChat((x) => !x)}
           >
-            <span>✳</span>聊聊你的家 <small>AI 咨询</small>
+            聊聊你的家 <small>空间咨询</small>
           </button>
-          {project.rooms.map((r) => (
-            <ChatWindow
-              key={r.id}
-              project={project}
-              roomId={r.id}
-              visible={chat && r.id === room}
-              onClose={() => setChat(false)}
-              onSend={send}
-              commit={commit}
-              onCancel={cancel}
-              keyboard={keyboard}
-              toolStatus={toolStatus}
-              onError={setError}
-              onQuestionnaire={()=>setQuestionnaire(true)}
-              onDelivery={()=>setDelivery(true)}
-            />
-          ))}
+          {!paper&&conversations}
         </section>
+        {paper&&<div className="paper-chat-stage" data-open={chat}>{conversations}{!chat&&<div className="paper-chat-closed"><span className={typeEyebrow}>consultation</span><h2>继续聊聊你的家。</h2><p>之前的消息、文字草稿和本轮附件仍在。</p><button type="button" onClick={()=>setChat(true)}>打开对话</button></div>}</div>}
         {panel ? (
           <RequirementsPanel
             project={project}
@@ -471,12 +464,13 @@ export function Workbench({ initial }: { initial: ProjectData }) {
             onClose={() => setPanel(false)}
             onError={setError}
           />
-        ) : (
+        ) : !paper ? (
           <button className="panel-reopen" onClick={() => setPanel(true)}>
             ☷ 需求清单
           </button>
-        )}
+        ) : null}
       </main>
+      {paper&&<nav className="paper-mobile-tabs" aria-label="工作区视图"><button type="button" aria-pressed={!chat} onClick={()=>setChat(false)}>空间预览</button><button type="button" aria-pressed={chat} onClick={()=>setChat(true)}>咨询对话</button><button type="button" aria-pressed={panel} onClick={()=>setPanel(v=>!v)}>需求记录</button></nav>}
       {editing && <ObjectEditor key={editing} projectId={project.id} objectId={editing} project={project} commit={commit}
         restore={async()=>{if(previewing.current===editing){previewing.current=null;await bridge.call('load',{scene:current.current.scene,version:current.current.version});loadedScene.current=canonical(current.current.scene);setSaved(true);}}}
         preview={async id=>{

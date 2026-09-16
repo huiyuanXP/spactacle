@@ -117,6 +117,7 @@ export type RoomInfo = {
   bounds: { x: number; y: number; width: number; depth: number };
 };
 export type ChatMessage = {
+  model_id?: string;
   failure_code?: string;
   attachment_ids?: string[];
   id: string;

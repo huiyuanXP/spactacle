@@ -14,6 +14,7 @@ type Run = {
   owner: string;
   cancelled: boolean;
   timedOut: boolean;
+  modelId?: string;
   agent?: Agent;
   promise?: Promise<void>;
 };
@@ -33,9 +34,10 @@ export class ChatService {
       text: string;
       attachment_id?: string;
       attachment_ids?: string[];
+      model_id?: string;
     },
   ) {
-    const input = { room_id: b.room_id, text: b.text, ...(b.attachment_id?{attachment_id:b.attachment_id}:{}), ...(b.attachment_ids?{attachment_ids:b.attachment_ids}:{}) };
+    const input = { room_id: b.room_id, text: b.text, ...(b.model_id?{model_id:b.model_id}:{}), ...(b.attachment_id?{attachment_id:b.attachment_id}:{}), ...(b.attachment_ids?{attachment_ids:b.attachment_ids}:{}) };
     const prior = await this.store.replay(
       id,
       owner,
@@ -65,6 +67,7 @@ export class ChatService {
       owner,
       cancelled: false,
       timedOut: false,
+      modelId: b.model_id,
     };
     this.active.set(id, run);
     try {
@@ -88,6 +91,7 @@ export class ChatService {
             {
               id: b.request_id,
               role: "user",
+              ...(b.model_id ? { model_id: b.model_id } : {}),
               content: b.text,
               room_id: b.room_id,
               run_id: run.id,
@@ -98,6 +102,7 @@ export class ChatService {
             {
               id: randomUUID(),
               role: "assistant",
+              ...(b.model_id ? { model_id: b.model_id } : {}),
               content: "",
               room_id: b.room_id,
               run_id: run.id,
@@ -322,7 +327,7 @@ export class ChatService {
             },
           },
         ],
-        {maxTurns:6},
+        {maxTurns:6, modelId:run.modelId},
       );
       if (run.cancelled) {
         status = run.timedOut ? "failed" : "cancelled";
@@ -370,7 +375,7 @@ export class ChatService {
         status = "failed";
       else {
         structuralFailure=true;
-        const result=await ensureIntakeQuestion(this.store,{id,owner:run.owner,room:roomId,runId:run.id,messageId:run.requestId,baseVersion:snapshot.version,cancelled:()=>run.cancelled},this.agentFactory,agent=>{run.agent=agent;});
+        const result=await ensureIntakeQuestion(this.store,{id,owner:run.owner,room:roomId,runId:run.id,messageId:run.requestId,baseVersion:snapshot.version,cancelled:()=>run.cancelled},(system,tools,limits)=>this.agentFactory(system,tools,{...limits,modelId:run.modelId}),agent=>{run.agent=agent;});
         structuralFailure=result.needed&&!result.provided;
         if(structuralFailure)status='failed';
         if(run.cancelled)status=run.timedOut?'failed':'cancelled';
