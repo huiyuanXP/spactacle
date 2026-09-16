@@ -9,14 +9,21 @@ import { useBridge } from "./bridge.js";
 import { RequirementsPanel, type Commit } from "./RequirementsPanel.js";
 import { ChatWindow } from "./ChatWindow.js";
 import { BriefPanel } from "./BriefPanel.js";
+import { ObjectEditor } from "./ObjectEditor.js";
+import {GeometryWarnings} from "./GeometryWarnings.js";
+import { QuestionnairePanel } from './QuestionnairePanel.js';
+import { DeliveryPanel } from './DeliveryPanel.js';
 export function Workbench({ initial }: { initial: ProjectData }) {
   const [project, setProject] = useState(initial),
     [room, setRoom] = useState(initial.rooms[0].id),
     [selected, setSelected] = useState<string | null>(null),
+    [editing, setEditing] = useState<string | null>(null),
     [mode, setMode] = useState("3d"),
     [panel, setPanel] = useState(true),
     [chat, setChat] = useState(false),
     [brief, setBrief] = useState(false),
+    [questionnaire, setQuestionnaire] = useState(false),
+    [delivery, setDelivery] = useState(false),
     [busy, setBusy] = useState(false),
     [applying, setApplying] = useState(false),
     [error, setError] = useState(""),
@@ -24,11 +31,14 @@ export function Workbench({ initial }: { initial: ProjectData }) {
     [saved, setSaved] = useState(true),
     [connected, setConnected] = useState(false),
     [toolStatus, setToolStatus] = useState("");
+  const sceneClean=useRef(saved);sceneClean.current=saved;
+  const editingCurrent=useRef(editing);editingCurrent.current=editing;
+  const previewing = useRef<string|null>(null);
   const current = useRef(project);
   current.current = project;
   const loadedScene = useRef(canonical(initial.scene)),
     loaded = useRef(false);
-  const bridge = useBridge(project.id, setSelected, () => setSaved(false));
+  const bridge = useBridge(project.id, (id) => { setSelected(id); if (id && current.current.scene.floors.some(f => f.furniture.some(o => o.id === id))) setEditing(id); }, () => setSaved(false));
   const merge = useCallback(
     (incoming: ProjectData) =>
       setProject((p) => {
@@ -62,12 +72,17 @@ export function Workbench({ initial }: { initial: ProjectData }) {
   }, []);
   const commit: Commit = useCallback(
     async (path, body) => {
+      if(path.startsWith("/references")&&!sceneClean.current)throw new Error("场景存在未保存修改或预览，请先保存或取消预览");
       try {
         const p = await api<ProjectData>(`/api/projects/${initial.id}${path}`, {
           expected_version: current.current.version,
           request_id: crypto.randomUUID(),
           ...body,
         });
+        // A following queued attachment command may begin before React renders.
+        // Advance the acknowledged version immediately; explicit form baselines
+        // in body still retain their own optimistic-concurrency protection.
+        if(p.version>=current.current.version)current.current=p;
         merge(p);
         return p;
       } catch (err) {
@@ -172,9 +187,11 @@ export function Workbench({ initial }: { initial: ProjectData }) {
     setRoom(id);
   };
   const keyboard = (locked: boolean) => {
-    if (bridge.ready) void bridge.call("keyboard", { locked }).catch(() => {});
+    if (bridge.ready) void bridge.call("keyboard", { locked:locked||questionnaire||delivery }).catch(() => {});
   };
+  useEffect(()=>{keyboard(questionnaire||delivery);},[questionnaire,delivery,bridge.ready]);
   const saveScene = async () => {
+    if(previewing.current){setError("当前为家具建议预览，请先确认或取消");return;}
     setBusy(true);
     try {
       if (canonical(current.current.scene) !== loadedScene.current)
@@ -215,13 +232,14 @@ export function Workbench({ initial }: { initial: ProjectData }) {
       setApplying(false);
     }
   };
-  const send = async (text: string, roomId: string) => {
+  const send = async (text: string, roomId: string, attachmentIds?:string[]) => {
     try {
       const result = await api<{ project: ProjectData }>(
         `/api/projects/${project.id}/chat`,
         {
           room_id: roomId,
           text,
+          ...(attachmentIds?.length?{attachment_ids:attachmentIds}:{}),
           expected_version: current.current.version,
           request_id: crypto.randomUUID(),
         },
@@ -282,6 +300,7 @@ export function Workbench({ initial }: { initial: ProjectData }) {
             开发看板 ↗
           </a>
           <button onClick={() => setBrief(true)}>需求任务书</button>
+          <button className="intake-nav" onClick={()=>setDelivery(true)}>问卷与交付</button>
           <button
             className="primary"
             disabled={busy || !bridge.ready}
@@ -291,7 +310,7 @@ export function Workbench({ initial }: { initial: ProjectData }) {
           </button>
         </div>
       </header>
-      <main className="workspace">
+      <main className="workspace" data-panel-open={panel}>
         <section className="scene">
           <iframe
             ref={bridge.frame}
@@ -299,6 +318,7 @@ export function Workbench({ initial }: { initial: ProjectData }) {
             title="OpenPlan3D 房间视图"
             allow="fullscreen"
           />
+          {saved && !editing && mode === "3d" && <GeometryWarnings project={project} projection={bridge.projection} focus={(id)=>void run(()=>focus(id))}/>}
           <div className="scene-label">
             <span className="status-dot" />
             可编辑空间<span className="muted">/</span>
@@ -361,6 +381,7 @@ export function Workbench({ initial }: { initial: ProjectData }) {
           {selected && (
             <div className="selection">
               已选中 <b>{selected}</b>
+              <button onClick={() => setEditing(selected)}>编辑家具属性</button>
               <button
                 onClick={() =>
                   void run(async () => {
@@ -436,6 +457,8 @@ export function Workbench({ initial }: { initial: ProjectData }) {
               keyboard={keyboard}
               toolStatus={toolStatus}
               onError={setError}
+              onQuestionnaire={()=>setQuestionnaire(true)}
+              onDelivery={()=>setDelivery(true)}
             />
           ))}
         </section>
@@ -454,6 +477,31 @@ export function Workbench({ initial }: { initial: ProjectData }) {
           </button>
         )}
       </main>
+      {editing && <ObjectEditor key={editing} projectId={project.id} objectId={editing} project={project} commit={commit}
+        restore={async()=>{if(previewing.current===editing){previewing.current=null;await bridge.call('load',{scene:current.current.scene,version:current.current.version});loadedScene.current=canonical(current.current.scene);setSaved(true);}}}
+        preview={async id=>{
+          if(!saved&&!previewing.current)throw new Error('场景存在未保存修改，请先保存项目');
+          const p=await refresh();if(editingCurrent.current!==editing)throw new Error('家具选择已改变，预览已取消');const m=p.object_messages?.find(m=>m.id===id&&m.object_id===editing);
+          if(!m||m.status!=='proposed'||!m.patch||canonical(p.scene)!==m.scene_fingerprint||p.revisions.some(r=>r.version>m.base_version&&['scene_changed','object_changed'].includes(r.kind)))throw new Error('场景已变化，请重新咨询');
+          const scene=structuredClone(p.scene);const item=scene.floors.flatMap(f=>f.furniture).find(o=>o.id===editing)!;Object.assign(item,m.patch);
+          previewing.current=editing;setSaved(false);await bridge.call('load',{scene,version:p.version});await bridge.call('focus',{room_id:m.room_id});
+        }}
+        adopt={async id=>{
+          if(previewing.current!==editing)throw new Error('请先预览当前家具');
+          const m=current.current.object_messages?.find(m=>m.id===id&&m.object_id===editing);if(!m)throw new Error('建议不存在');
+          try{const p=await commit('/objects/decision',{room_id:m.room_id,object_id:editing,message_id:id,action:'confirm',confirmed:true});await bridge.call('load',{scene:p.scene,version:p.version});loadedScene.current=canonical(p.scene);setSaved(true);setEditing(null);}
+          catch(e){const p=await refresh();await bridge.call('load',{scene:p.scene,version:p.version});loadedScene.current=canonical(p.scene);setSaved(true);throw e;}finally{previewing.current=null;}
+        }}
+        close={() => {if(previewing.current===editing){previewing.current=null;void bridge.call('load',{scene:current.current.scene,version:current.current.version}).then(()=>{loadedScene.current=canonical(current.current.scene);setSaved(true);});}setEditing(null);}} save={async (roomId, patch, baseline) => {
+        if (!saved||previewing.current) throw new Error("场景存在未保存修改或预览，请先保存项目或取消预览");
+        const p = await commit("/objects/update", {expected_version:baseline,room_id: roomId, object_id: editing, patch, confirmed: true});
+        await bridge.call("load", {scene: p.scene, version: p.version});
+        loadedScene.current = canonical(p.scene);
+        setSaved(true);
+
+      }}/>}
+      {questionnaire&&<QuestionnairePanel project={project} roomId={room} commit={commit} keyboard={keyboard} onClose={()=>setQuestionnaire(false)}/>}
+      {delivery&&<DeliveryPanel project={project} commit={commit} onClose={()=>setDelivery(false)} onQuestionnaire={()=>{setDelivery(false);setQuestionnaire(true);}}/>}
       {brief && (
         <BriefPanel
           project={project}

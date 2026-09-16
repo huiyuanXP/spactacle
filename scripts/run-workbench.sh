@@ -7,7 +7,7 @@ export PATH="$ROOT/.runtime/node-$NODE_VERSION-linux-x64/bin:$PATH"
 export PORT="${PORT:-4174}"
 export APP_ORIGIN="${APP_ORIGIN:-http://127.0.0.1:$PORT}"
 export PUBLIC_ENABLE_ANALYTICS=false
-if [[ ! -f apps/web/dist/index.html || ! -f vendor/openplan3d/build/handler.js ]]; then
+if [[ ! -f "${APP_WEB_DIST:-$ROOT/apps/web/dist}/index.html" || ! -f "${APP_ENGINE_DIR:-$ROOT/vendor/openplan3d/build}/handler.js" ]]; then
   echo 'Production assets are missing. Run npm run build before starting.' >&2
   exit 1
 fi

@@ -27,5 +27,8 @@ export const config = {
     local.openai_baseurl ||
     "https://api.openai.com/v1"
   ).replace(/\/$/, ""),
+  visionModel: process.env.OPENAI_VISION_MODEL || local.openai_vision_model || "gemini-3-flash",
+  transcriptionModel: process.env.OPENAI_TRANSCRIPTION_MODEL || local.openai_transcription_model || "gemini-3-flash",
+  audioApi: process.env.AUDIO_API || "chat-input-audio",
   model: process.env.OPENAI_MODEL || local.openai_model || "",
 };

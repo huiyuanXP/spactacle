@@ -24,6 +24,7 @@ export function useBridge(
       >(),
     );
   const [ready, setReady] = useState(false);
+  const [projection,setProjection]=useState<{width:number;height:number;objects:{id:string;x:number;y:number;visible:boolean}[]}|null>(null);
   const callback = useRef(onSelection);
   callback.current = onSelection;
   const dirty = useRef(onDirty);
@@ -67,6 +68,7 @@ export function useBridge(
         typeof m.request_id !== "string"
       )
         return;
+      if(m.type === "projection"){const p=m.payload;if(p&&Number.isFinite(p.width)&&p.width>0&&Number.isFinite(p.height)&&p.height>0&&Array.isArray(p.objects)&&p.objects.length<=10000&&p.objects.every((o:any)=>typeof o.id==="string"&&Number.isFinite(o.x)&&Number.isFinite(o.y)&&typeof o.visible==="boolean"))setProjection(p);return;}
       if (m.type === "ready") {
         setReady(true);
         return;
@@ -97,5 +99,5 @@ export function useBridge(
       pending.current.clear();
     };
   }, [projectId]);
-  return { frame, ready, call };
+  return { frame, ready, call, projection };
 }

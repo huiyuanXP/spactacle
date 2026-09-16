@@ -10,7 +10,13 @@ import { applyManual, adoptSuggestions } from "./requirements.js";
 import { nextQuestions, questionGroups } from "./questions.js";
 import { ChatService } from "./chat.js";
 import { buildReview } from "./review.js";
+import { registerIntake } from './intake.js';
+import { registerDelivery } from './delivery.js';
+import { registerDocuments } from './document-routes.js';
 export function registerBusiness(app: FastifyInstance, store: Store) {
+  registerIntake(app, store);
+  registerDelivery(app, store);
+  registerDocuments(app, store);
   const chat = new ChatService(store),
     reviews = new Set<string>();
   const identity = (req: any) => ({
@@ -82,6 +88,7 @@ export function registerBusiness(app: FastifyInstance, store: Store) {
       b = Command.extend({
         room_id: Id,
         text: z.string().trim().min(1).max(8000),
+        attachment_ids: z.array(Id).max(6).optional(),
       }).parse(req.body);
     return chat.start(id, owner, b);
   });

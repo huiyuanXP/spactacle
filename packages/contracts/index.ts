@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { IntakeAnswer, IntakeProposal, DeliverySnapshot } from './intake.js';
 export const Id = z
   .string()
   .min(1)
@@ -26,6 +27,7 @@ const Furniture = z
     width: Dimension.optional(),
     depth: Dimension.optional(),
     height: Dimension.optional(),
+    elevation: z.number().finite().min(0).max(1000).optional(),
     color: z.string().max(80).optional(),
   })
   .passthrough();
@@ -51,7 +53,8 @@ export const Scene = z
           .object({
             id: Id,
             name: z.string(),
-            level: z.number().int(),
+            level: z.number().int().min(-100).max(100),
+            elevation: z.number().finite().min(-30000).max(30000).optional(),
             walls: z.array(Wall).max(1000),
             rooms: z.array(Room).max(100),
             furniture: z.array(Furniture).max(1000),
@@ -95,6 +98,8 @@ export type Requirement = {
   source: "manual" | "extracted" | "accepted";
 };
 export type Evidence = {
+  attachment_id?: string;
+  region?: "whole_image" | "whole_audio" | "document_text";
   id: string;
   quote: string;
   message_id?: string;
@@ -112,6 +117,8 @@ export type RoomInfo = {
   bounds: { x: number; y: number; width: number; depth: number };
 };
 export type ChatMessage = {
+  failure_code?: string;
+  attachment_ids?: string[];
   id: string;
   role: "user" | "assistant";
   content: string;
@@ -141,7 +148,18 @@ export type Report = {
   summary: string;
   model_status: string;
 };
+export type ObjectConversation={id:string;project_id:string;room_id:string;object_id:string;raw_user_evidence:string;text:string;status:'running'|'proposed'|'accepted'|'rejected'|'failed';patch:{width?:number;depth?:number;height?:number;elevation?:number;color?:string}|null;base_version:number;scene_fingerprint:string;created_at:string};
+export type ReferencePlan={id:string;room_id:string;raw_text:string;status:'running'|'proposed'|'failed';text:string;lines:{asset_id:string;quantity:number;object_ids:string[]}[]};
+export type GeometryDiagnostic = {id:string;rule:"boundary"|"collision"|"unknown";rule_version:number;object_ids:string[];status:"active"|"resolved";severity:"warning"|"uncertain";evidence:string;advice:string;first_version:number;last_version:number};
 export type ProjectData = {
+  intake_answers?: IntakeAnswer[];
+  intake_questions?: IntakeProposal[];
+  delivery_snapshots?: DeliverySnapshot[];
+  geometry_diagnostics?: GeometryDiagnostic[];
+  media_analyses?: {request_id:string;attachment_id:string;started_at?:string;status:"running"|"complete"|"failed"}[];
+  attachments?: {id:string;room_id:string;message_id:string;mime:string;name?:string;byte_size?:number;status:"uploaded"|"analyzing"|"analyzed"|"confirmed"|"failed";transcript?:string;corrected_transcript?:string;extracted_text?:string;extraction_note?:string;analysis_summary?:string}[];
+  reference_plans?: ReferencePlan[];
+  object_messages?: ObjectConversation[];
   id: string;
   name: string;
   version: number;

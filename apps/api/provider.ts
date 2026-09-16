@@ -71,6 +71,7 @@ export async function resolveModel(): Promise<Model<"openai-completions">> {
 export async function createConsultationAgent(
   systemPrompt: string,
   tools: AgentTool[] = [],
+  limits: { maxTurns?: number } = {},
 ) {
   const model = await resolveModel();
   let turns = 0;
@@ -85,7 +86,9 @@ export async function createConsultationAgent(
         maxRetries: 0,
       }),
     toolExecution: "sequential",
-    shouldStopAfterTurn: () => ++turns >= 4,
+    // A multi-input consultation may need read, extract, verify, propose and a
+    // final prose turn. Other agents retain their existing four-turn ceiling.
+    shouldStopAfterTurn: () => ++turns >= Math.min(6,Math.max(1,limits.maxTurns??4)),
   });
 }
 export function finalAgentText(agent: Agent): string {

@@ -4,7 +4,7 @@ import adapter from '@sveltejs/adapter-node';
 const config = {
 	kit: {
 		paths: { base: '/engine' },
-		adapter: adapter()
+		adapter: adapter({ out: process.env.APP_ENGINE_DIR || 'build' })
 	}
 };
 

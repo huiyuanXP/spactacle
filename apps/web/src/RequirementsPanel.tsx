@@ -1,3 +1,4 @@
+import {ReferencePanel} from './ReferencePanel.js';
 import React, { useState } from "react";
 import {
   fields,
@@ -222,6 +223,7 @@ export function RequirementsPanel({
   ).length;
   return (
     <aside className="requirements-panel" aria-label="需求收集面板">
+      <ReferencePanel key={roomId} project={project} roomId={roomId} commit={commit}/>
       <div className="panel-header">
         <div>
           <span className="eyebrow">YOUR DESIGN BRIEF</span>

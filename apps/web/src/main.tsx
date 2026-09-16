@@ -110,7 +110,8 @@ function App() {
       await api("/api/session");
       setAuth(true);
       const result = await api<{ projects: { id: string }[] }>("/api/projects");
-      const p = result.projects.length
+      const requested = new URLSearchParams(location.search).get("project");
+      const p = requested !== null ? await api<ProjectData>(`/api/projects/${encodeURIComponent(requested)}`) : result.projects.length
         ? await api<ProjectData>(`/api/projects/${result.projects[0].id}`)
         : await api<ProjectData>("/api/projects", {});
       setProject(p);

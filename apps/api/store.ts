@@ -1,3 +1,5 @@
+import {recomputeGeometry} from "./geometry.js";
+import { acceptedReferenceIssue } from './reference-integrity.js';
 import { PGlite } from "@electric-sql/pglite";
 import { randomUUID, createHash } from "node:crypto";
 import type {
@@ -21,11 +23,14 @@ export class Store {
   }
   async init() {
     await this.db
-      .exec(`CREATE TABLE IF NOT EXISTS projects(id text PRIMARY KEY, owner_id text NOT NULL, version integer NOT NULL, data jsonb NOT NULL);
+      .exec(`CREATE TABLE IF NOT EXISTS attachments(id text PRIMARY KEY,project_id text NOT NULL,mime text NOT NULL,data text NOT NULL,original_mime text,original_data text,byte_size integer NOT NULL);
+      CREATE TABLE IF NOT EXISTS projects(id text PRIMARY KEY, owner_id text NOT NULL, version integer NOT NULL, data jsonb NOT NULL);
       CREATE TABLE IF NOT EXISTS commands(project_id text NOT NULL, request_id text NOT NULL, fingerprint text NOT NULL, response jsonb NOT NULL, PRIMARY KEY(project_id,request_id));
       CREATE TABLE IF NOT EXISTS events(event_id bigserial PRIMARY KEY, project_id text NOT NULL, project_version integer NOT NULL, type text NOT NULL, payload jsonb NOT NULL);
       CREATE INDEX IF NOT EXISTS events_project_idx ON events(project_id,event_id);
       CREATE TABLE IF NOT EXISTS sessions(token_hash text PRIMARY KEY, owner_id text NOT NULL, expires_at timestamptz NOT NULL);
+      UPDATE projects SET data=jsonb_set(data,'{reference_plans}','[]'::jsonb) WHERE NOT data ? 'reference_plans';
+      UPDATE projects SET data=jsonb_set(data,'{object_messages}','[]'::jsonb) WHERE NOT data ? 'object_messages';
       UPDATE projects SET data=jsonb_set(data,'{brief_version}',to_jsonb(version)) WHERE NOT data ? 'brief_version';`);
   }
   async list(owner: string) {
@@ -38,6 +43,7 @@ export class Store {
   }
   async create(owner: string) {
     const p = sampleProject(randomUUID());
+    recomputeGeometry(p);
     await this.db.query("INSERT INTO projects VALUES ($1,$2,$3,$4)", [
       p.id,
       owner,
@@ -54,6 +60,7 @@ export class Store {
       )
     ).rows[0];
     if (!row) throw new HttpError(404, "项目不存在或无权访问");
+    if(!row.data.geometry_diagnostics)recomputeGeometry(row.data);
     return row.data;
   }
   async mutate(
@@ -63,7 +70,7 @@ export class Store {
     expectedVersion: number | null,
     kind: string,
     input: unknown,
-    fn: (p: ProjectData) => void,
+    fn: (p: ProjectData, tx: any) => void | Promise<void>,
     actor = "owner",
   ) {
     const hash = createHash("sha256")
@@ -94,15 +101,34 @@ export class Store {
           `版本冲突：服务器 v${row.version}。请重新读取后确认，未覆盖任何字段。`,
         );
       const p = row.data;
-      fn(p);
+      await fn(p,tx);
+      if (kind === 'scene_changed' || kind === 'object_changed') {
+        const issue = acceptedReferenceIssue(p);
+        if (issue) throw new HttpError(409, issue);
+      }
       p.version = row.version + 1;
+      if(kind === "scene_changed")for(const requirement of p.requirements.filter(r=>r.field_key.startsWith('furniture:'))){
+        const object=p.scene.floors.flatMap(f=>f.furniture).find(o=>requirement.field_key===`furniture:${o.id}`);
+        if(!object){requirement.confirmation_state='pending';continue;}
+        let previous:any;try{previous=JSON.parse(String(requirement.value));}catch{requirement.confirmation_state='pending';continue;}
+        const values={...previous,width:object.width,depth:object.depth,height:object.height,color:object.color,elevation:object.elevation??0};
+        if(canonical(previous)!==canonical(values)){requirement.value=JSON.stringify(values);requirement.version=p.version;const evidenceId=randomUUID();requirement.evidence_ids.push(evidenceId);p.evidence.push({id:evidenceId,source:'scene_confirmation',room_id:requirement.room_id,quote:JSON.stringify({request_id:requestId,object_id:object.id,values}),created_at:new Date().toISOString()});}
+      }
+      if (kind === "scene_changed" || kind === "object_changed") recomputeGeometry(p);
       if (
         [
           "requirements_changed",
           "suggestions_adopted",
           "scene_changed",
+          "object_changed",
           "extracted_answer",
           "chat_started",
+          "intake_answered",
+          "intake_extracted",
+          "document_uploaded",
+          "document_reparsed",
+          "attachment_uploaded",
+          "media_analyzed",
         ].includes(kind)
       )
         p.brief_version = (p.brief_version || 0) + 1;

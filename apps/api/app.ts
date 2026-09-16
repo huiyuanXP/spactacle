@@ -13,7 +13,13 @@ import { Store, HttpError } from "./store.js";
 import { boardPayload } from "./board.js";
 import { registerBusiness } from "./business-routes.js";
 import { syncRoomGeometry } from "./scene.js";
+import { ObjectUpdate, objectInfo, updateObject } from "./objects.js";
+import {ObjectChatService,ObjectChatCommand,ObjectDecision} from "./object-chat.js";
+import {ReferenceService,ReferenceRequest,ReferenceDecision,ReferenceQuantity} from "./references.js";
+import {registerMedia} from "./media.js";
 export type AppOptions = {
+ referenceGenerator?: ConstructorParameters<typeof ReferenceService>[1];
+  objectGenerator?: ConstructorParameters<typeof ObjectChatService>[1];
   accessCode?: string;
   origin?: string;
   assets?: boolean;
@@ -24,6 +30,8 @@ export async function buildApp(store: Store, options: AppOptions = {}) {
     bodyLimit: 2 * 1024 * 1024,
     forceCloseConnections: true,
   });
+  const references=new ReferenceService(store,options.referenceGenerator);
+  const objectChat = new ObjectChatService(store,options.objectGenerator);
   const origin = options.origin || config.publicOrigin;
   const access = options.accessCode || config.accessCode;
   const hash = (value: string) =>
@@ -31,6 +39,7 @@ export async function buildApp(store: Store, options: AppOptions = {}) {
   await app.register(cookie);
   await app.register(rateLimit, {
     global: true,
+    allowList: (req) => !req.url.startsWith("/api/"),
     max: 240,
     timeWindow: "1 minute",
   });
@@ -132,10 +141,27 @@ export async function buildApp(store: Store, options: AppOptions = {}) {
       "scene_changed",
       b.scene,
       (p) => {
+        const priorRefs=p.scene.floors.flatMap(f=>f.furniture).filter(o=>o.suggestion_id);
+        const nextItems=b.scene.floors.flatMap(f=>f.furniture);
+        for(const old of priorRefs){const next=nextItems.find(o=>o.id===old.id);if(!next||['suggestion_id','room_id','reference_status','catalogId'].some(k=>next[k]!==old[k]))throw new HttpError(409,'参考家具状态与资产由专用命令管理，请刷新后使用采用或移除操作');}
+        if(nextItems.some(o=>o.suggestion_id&&!priorRefs.some(old=>old.id===o.id)))throw new HttpError(400,'参考家具必须由白名单命令创建');
         p.scene = b.scene;
         syncRoomGeometry(p);
       },
     );
+  });
+  app.post('/api/projects/:id/references',async req=>references.start(Id.parse((req.params as any).id),(req as any).owner,ReferenceRequest.parse(req.body)));
+  app.post('/api/projects/:id/references/quantity',async req=>references.quantity(Id.parse((req.params as any).id),(req as any).owner,ReferenceQuantity.parse(req.body)));
+  app.post('/api/projects/:id/references/decision',async req=>references.decide(Id.parse((req.params as any).id),(req as any).owner,ReferenceDecision.parse(req.body)));
+  app.post("/api/projects/:id/objects/chat",async req=>objectChat.start(Id.parse((req.params as any).id),(req as any).owner,ObjectChatCommand.parse(req.body)));
+  app.post("/api/projects/:id/objects/decision",async req=>objectChat.decide(Id.parse((req.params as any).id),(req as any).owner,ObjectDecision.parse(req.body)));
+  app.get("/api/projects/:id/objects/:object", async req => {
+    const params = req.params as any;
+    return objectInfo(await store.get(Id.parse(params.id), (req as any).owner), Id.parse(params.object));
+  });
+  app.post("/api/projects/:id/objects/update", async req => {
+    const b = ObjectUpdate.parse(req.body);
+    return store.mutate(Id.parse((req.params as any).id), (req as any).owner, b.request_id, b.expected_version, "object_changed", b, p => updateObject(p,b));
   });
   app.get("/api/projects/:id/events", async (req, reply) => {
     const id = Id.parse((req.params as any).id);
@@ -178,7 +204,8 @@ export async function buildApp(store: Store, options: AppOptions = {}) {
     });
     await pump();
   });
-  registerBusiness(app, store);
+  const consultation=registerBusiness(app, store);
+  registerMedia(app,store,consultation);
   app.get("/healthz", async () => ({
     ok: true,
     service: "renovation-workbench",
@@ -192,7 +219,7 @@ export async function buildApp(store: Store, options: AppOptions = {}) {
         .send(readFileSync(resolve(root, "taskboard/index.html"))),
     );
   if (options.assets !== false) {
-    const enginePath = resolve(root, "vendor/openplan3d/build/handler.js");
+    const enginePath = resolve(process.env.APP_ENGINE_DIR || resolve(root, "vendor/openplan3d/build"), "handler.js");
     if (existsSync(enginePath)) {
       const { handler } = await import(pathToFileURL(enginePath).href);
       app.get("/engine/*", async (req, reply) => {
@@ -214,7 +241,7 @@ export async function buildApp(store: Store, options: AppOptions = {}) {
         });
       });
     }
-    const web = resolve(root, "apps/web/dist");
+    const web = resolve(process.env.APP_WEB_DIST || resolve(root, "apps/web/dist"));
     if (existsSync(web)) {
       await app.register(staticPlugin, {
         root: web,
