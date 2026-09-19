@@ -14,7 +14,7 @@ export function ObjectEditor({projectId, objectId, save, close, project, commit,
    api<any>(`/api/projects/${projectId}/objects/${objectId}`).then(i=>{if(alive){setInfo(i);setDraft(i.values);}}).catch(e=>setError(e.message));
    return ()=>{alive=false;previous?.focus();};
  },[projectId,objectId]);
- return <dialog ref={dialog} className="object-editor" aria-labelledby="object-title" onCancel={e=>{e.preventDefault();if(!busy)close();}}>
+ return <dialog ref={dialog} className="object-editor" aria-labelledby="object-title" onPointerDown={e=>{if(e.target!==e.currentTarget||busy)return;const r=e.currentTarget.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)close();}} onCancel={e=>{e.preventDefault();if(!busy)close();}}>
    <form onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{const patch=Object.fromEntries(Object.entries(draft).filter(([k,v])=>v!==info.values[k]));if(!Object.keys(patch).length){close();return;}await save(info.room_id,patch,info.project_version);close();}catch(e){if((e as any).status!==409)setDraft(info.values);setError((e as Error).message+'；未保存。版本冲突时保留当前草稿，请读取最新值后重新核对。');}finally{setBusy(false);}}}>
    <h2 id="object-title">家具属性</h2><p>{objectId}</p>
    <button type="button" aria-label="关闭家具属性" disabled={busy} onClick={close}>×</button>

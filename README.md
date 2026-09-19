@@ -4,11 +4,11 @@ Codex 的 MCP 调用、内层 workspace-write 执行和浏览器链路已接通�
 
 装修咨询与可编辑 3D 房间工作台。项目根目录：`/home/ubuntu/aws-hackthon/renovation-consultation`。
 
-## 当前实现（2026-09-15）
+## 当前实现（2026-09-16）
 
-Agent / intake v2 已正式部署到 [prod.huiyuanxp.com](https://prod.huiyuanxp.com)，[开发看板 /todo](https://prod.huiyuanxp.com/todo) 保留。包含统一多模态输入、60题渐进问卷、证据推荐与明确确认、业主/设计师交付清单，以及原有 Week2 工作台。使用说明见 [AGENT-INTAKE-V2](docs/AGENT-INTAKE-V2.md)。不代表全屋几何或Ticket14已完成。
+[Paper UI 新版工作台](https://prod.huiyuanxp.com/new-ui) 已发布，沿用4173、原登录和项目数据；[原版入口](https://prod.huiyuanxp.com) 和[看板 /todo](https://prod.huiyuanxp.com/todo) 保留。共享模型选择、附件/语音输入与对话内确认，深浅主题和手机布局已验证。使用与边界见 [Paper UI 设计](docs/design/PAPER-UI.md) 和[发布验收记录](docs/handoffs/PAPER-UI-20260916.md)。
 
-生产冻结版本 `/opt/renovation-workbench/releases/intake-v2-20260915T083433Z/app`；完整Week2回退包和停写一致性备份已验证。48/48逻辑/API、类型检查、构建通过；浏览器完整套件12/14，随后两项定向复验2/2，14个场景均有通过记录，初始失败保留。冻结启动、数据副本兼容、42组本机/公网检查通过；原会话、1个业主项目和1个附件保留。coding-tools-mcp未重置或重启，隧道和4173不变。回执 `.runtime/deploy-receipts/intake-v2-20260915T083433Z/result.json`；测试仍仅使用4175和专用测试数据。
+冻结版本 `/opt/renovation-workbench/releases/paper-ui-20260916T150735Z/app`；完整intake-v2回退包和停写一致性备份保留。新一轮51/51逻辑/API、类型检查、与已验收产物逐字节一致的构建通过；新版7个浏览器场景分组复验通过，保留中断/失败与重试。54组本机/公网检查及实际公网浏览器验证通过，原会话、项目和2个附件保留。MCP未重置或重启。工作区较新的协作改动未纳入发布，不代表Ticket13/Week3或全屋几何完成。
 
 先读 [当前交接](docs/handoffs/CURRENT.md)、[部署与回滚](docs/DEPLOYMENT.md) 和 [验证索引](docs/WEEK1-VALIDATION.md)。登录口令保存在私有 `.data/owner-access-code`。生产运行时不要再用默认预览命令打开同一份数据库；浏览器测试只用专用 4175 与测试数据。
 

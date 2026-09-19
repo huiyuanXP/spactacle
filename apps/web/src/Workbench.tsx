@@ -15,17 +15,21 @@ import { QuestionnairePanel } from './QuestionnairePanel.js';
 import { DeliveryPanel } from './DeliveryPanel.js';
 import { ThemeToggle } from './ChatControls.js';
 import { typeEyebrow, typePage, typePackage } from './components/shared/type.js';
-export function Workbench({ initial, paper = false }: { initial: ProjectData; paper?: boolean }) {
+import { DesignerBoard } from './DesignerBoard.js';
+export type UserRole = 'owner'|'designer';
+export function Workbench({ initial, paper = false, role = 'owner' }: { initial: ProjectData; paper?: boolean; role?: UserRole }) {
+  const readOnly = role === 'designer';
   const [project, setProject] = useState(initial),
     [room, setRoom] = useState(initial.rooms[0].id),
     [selected, setSelected] = useState<string | null>(null),
     [editing, setEditing] = useState<string | null>(null),
     [mode, setMode] = useState("3d"),
     [panel, setPanel] = useState(!paper),
-    [chat, setChat] = useState(paper),
+    [chat, setChat] = useState(paper&&!readOnly),
     [brief, setBrief] = useState(false),
     [questionnaire, setQuestionnaire] = useState(false),
     [delivery, setDelivery] = useState(false),
+    [collaboration, setCollaboration] = useState(false),
     [busy, setBusy] = useState(false),
     [applying, setApplying] = useState(false),
     [error, setError] = useState(""),
@@ -40,7 +44,7 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
   current.current = project;
   const loadedScene = useRef(canonical(initial.scene)),
     loaded = useRef(false);
-  const bridge = useBridge(project.id, (id) => { setSelected(id); if (id && current.current.scene.floors.some(f => f.furniture.some(o => o.id === id))) setEditing(id); }, () => setSaved(false));
+  const bridge = useBridge(project.id, (id) => { setSelected(id); if (!readOnly && id && current.current.scene.floors.some(f => f.furniture.some(o => o.id === id))) setEditing(id); }, () => { if(!readOnly)setSaved(false); });
   const merge = useCallback(
     (incoming: ProjectData) =>
       setProject((p) => {
@@ -60,10 +64,10 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
     [],
   );
   const refresh = useCallback(async () => {
-    const p = await api<ProjectData>(`/api/projects/${initial.id}`);
+    const p = readOnly ? (await api<{project:ProjectData}>(`/api/projects/${initial.id}/collaboration/view`)).project : await api<ProjectData>(`/api/projects/${initial.id}`);
     merge(p);
     return p;
-  }, [initial.id, merge]);
+  }, [initial.id, merge, readOnly]);
   const run = useCallback(async (task: () => Promise<void>) => {
     setError("");
     try {
@@ -74,6 +78,7 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
   }, []);
   const commit: Commit = useCallback(
     async (path, body) => {
+      if(readOnly) throw new Error('设计师入口为只读；请通过设计师看板提交独立建议');
       if(path.startsWith("/references")&&!sceneClean.current)throw new Error("场景存在未保存修改或预览，请先保存或取消预览");
       try {
         const p = await api<ProjectData>(`/api/projects/${initial.id}${path}`, {
@@ -95,6 +100,7 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
     [initial.id, merge, refresh],
   );
   useEffect(() => {
+    if(readOnly)return;
     const key = `roomnote:last-event:${initial.id}`;
     let last = Number(sessionStorage.getItem(key) || 0);
     if (!Number.isSafeInteger(last) || last < 0) last = 0;
@@ -141,7 +147,7 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
       } else if (event.type === "tool_status") {
         const a = event.payload;
         setToolStatus(
-          `${a.name === "read_consultation" ? "读取原话与需求" : "生成待确认建议"} · ${a.status === "running" ? "进行中" : a.status === "failed" ? "未通过校验" : "完成"}`,
+          `${({read_consultation:'读取原话与需求',read_attachment_excerpt:'阅读附件片段',read_intake_detail:'核对问卷回答',record_intake_answer:'整理原话，等待你核对',ask_intake_question:'准备推荐与替代选择',record_answer:'提取字段，等待你核对',propose_field:'生成待确认建议'} as Record<string,string>)[String(a.name)]||'处理咨询资料'} · ${a.status === "running" ? "进行中" : a.status === "failed" ? "未通过校验" : "完成"}`,
         );
       } else void refresh().catch(() => {});
     };
@@ -157,7 +163,7 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
       window.removeEventListener("offline", offline);
       window.removeEventListener("online", online);
     };
-  }, [initial.id, refresh]);
+  }, [initial.id, refresh, readOnly]);
   useEffect(() => {
     if (bridge.ready)
       void run(async () => {
@@ -189,9 +195,24 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
     setRoom(id);
   };
   const keyboard = (locked: boolean) => {
-    if (bridge.ready) void bridge.call("keyboard", { locked:locked||questionnaire||delivery }).catch(() => {});
+    if (bridge.ready) void bridge.call("keyboard", { locked:locked||questionnaire||delivery||collaboration }).catch(() => {});
   };
-  useEffect(()=>{keyboard(questionnaire||delivery);},[questionnaire,delivery,bridge.ready]);
+  useEffect(()=>{keyboard(questionnaire||delivery||collaboration);},[questionnaire,delivery,collaboration,bridge.ready]);
+  useEffect(() => {
+    const closeChatWhenLeavingStage = (event: PointerEvent) => {
+      if (!paper || !chat) return;
+      const target = event.target as HTMLElement;
+      if (target.closest('.scene') && !target.closest('.chat-window, .chat-launcher, [role="dialog"]')) setChat(false);
+      document.querySelectorAll<HTMLDetailsElement>('.question-fold[open]').forEach(fold=>{if(!fold.contains(target))fold.open=false;});
+    };
+    const frame=document.querySelector<HTMLIFrameElement>('.scene iframe');
+    let canvasDocument:Document|null=null;
+    const closeOnCanvasPointer=()=>{if(paper&&chat)setChat(false);};
+    const attachCanvas=()=>{canvasDocument?.removeEventListener('pointerdown',closeOnCanvasPointer);canvasDocument=frame?.contentDocument??null;canvasDocument?.addEventListener('pointerdown',closeOnCanvasPointer);};
+    attachCanvas();frame?.addEventListener('load',attachCanvas);
+    document.addEventListener('pointerdown', closeChatWhenLeavingStage);
+    return () => {document.removeEventListener('pointerdown', closeChatWhenLeavingStage);frame?.removeEventListener('load',attachCanvas);canvasDocument?.removeEventListener('pointerdown',closeOnCanvasPointer);};
+  }, [paper, chat]);
   const saveScene = async () => {
     if(previewing.current){setError("当前为家具建议预览，请先确认或取消");return;}
     setBusy(true);
@@ -256,7 +277,7 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
   const cancel = async (runId: string) => {
     await api(`/api/projects/${project.id}/chat/cancel`, { run_id: runId });
   };
-  const conversations = project.rooms.map(r=><ChatWindow key={r.id} project={project} roomId={r.id} visible={chat&&r.id===room} docked={paper} onClose={()=>setChat(false)} onSend={send} commit={commit} onCancel={cancel} keyboard={keyboard} toolStatus={toolStatus} onError={setError} onQuestionnaire={()=>setQuestionnaire(true)} onDelivery={()=>setDelivery(true)}/>);
+  const conversations = readOnly ? null : project.rooms.map(r=><ChatWindow key={r.id} project={project} roomId={r.id} visible={chat&&r.id===room} paperPopup={paper} onClose={()=>setChat(false)} onSend={send} commit={commit} onCancel={cancel} keyboard={keyboard} toolStatus={toolStatus} onError={setError} onQuestionnaire={()=>setQuestionnaire(true)} onDelivery={()=>setDelivery(true)}/>);
   const activeRoom=project.rooms.find(r=>r.id===room)!;
   return (
     <div className={`workbench${paper?' paper-ui':''}`} data-chat-open={chat}>
@@ -305,19 +326,21 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
           <a href="/todo" target="_blank" rel="noreferrer">
             开发看板 ↗
           </a>
-          <button onClick={() => setBrief(true)}>需求任务书</button>
-          <button className="intake-nav" onClick={()=>setDelivery(true)}>问卷与交付</button>
-          <button
+          {!readOnly&&<button onClick={() => setBrief(true)}>需求任务书</button>}
+          {!readOnly&&<button className="intake-nav" onClick={()=>setDelivery(true)}>问卷与交付</button>}
+          <button onClick={()=>setCollaboration(true)}>设计师看板</button>
+          {!readOnly&&<button
             className="primary"
             disabled={busy || !bridge.ready}
             onClick={() => void run(saveScene)}
           >
             {busy ? "保存中…" : "保存项目"}
-          </button>
+          </button>}
+          {readOnly&&<span className="role-badge">设计师只读入口</span>}
         </div>
       </header>
       <main className="workspace" data-panel-open={panel}>
-        {paper&&<nav className="paper-rail" aria-label="空间与设计资料"><div><span className={typeEyebrow}>你的空间</span>{project.rooms.map((r,index)=><button type="button" key={r.id} className={r.id===room?'active':''} aria-current={r.id===room?'page':undefined} onClick={()=>void run(()=>focus(r.id))}><span className={typePackage}>{String(index+1).padStart(2,'0')}</span>{r.name}</button>)}</div><div><span className={typeEyebrow}>把想法落到纸上</span><button type="button" onClick={()=>setPanel(v=>!v)}>需求记录</button><button type="button" onClick={()=>setQuestionnaire(true)}>逐项确认</button><button type="button" onClick={()=>setDelivery(true)}>交付清单</button></div><div className="rail-bottom"><p>建议与正式值分开。<br/>每一次改变，由你确认。</p><a href={`/?project=${encodeURIComponent(project.id)}`}>原版工作台 ↗</a></div></nav>}
+        {paper&&<nav className="paper-rail" aria-label="空间与设计资料"><div><span className={typeEyebrow}>你的空间</span>{project.rooms.map((r,index)=><button type="button" key={r.id} className={r.id===room?'active':''} aria-current={r.id===room?'page':undefined} onClick={()=>void run(()=>focus(r.id))}><span className={typePackage}>{String(index+1).padStart(2,'0')}</span>{r.name}</button>)}</div><div><span className={typeEyebrow}>把想法落到纸上</span><button type="button" onClick={()=>setPanel(v=>!v)}>需求记录</button>{!readOnly&&<button type="button" onClick={()=>setQuestionnaire(true)}>逐项确认</button>}<button type="button" onClick={()=>setDelivery(true)}>交付清单</button></div><div className="rail-bottom"><p>建议与正式值分开。<br/>每一次改变，由你确认。</p><a href={`/?project=${encodeURIComponent(project.id)}`}>原版工作台 ↗</a></div></nav>}
         <section className="scene">
           {paper&&<div className="paper-scene-heading"><div><span className={typeEyebrow}>fig. 01 / 可编辑空间</span><h1 className={typePage}>让{activeRoom.name}更贴近你的生活。</h1></div><span className={typePackage}>{(activeRoom.geometry_cm.width/100).toFixed(1)} × {(activeRoom.geometry_cm.depth/100).toFixed(1)} m</span></div>}
           <iframe
@@ -386,11 +409,12 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
             <span>OpenPlan3D · 原生可编辑场景</span>
             <span>拖动旋转 · 滚轮缩放</span>
           </div>
+          <div className="scene-action-stack">
           {selected && (
             <div className="selection">
               已选中 <b>{selected}</b>
-              <button onClick={() => setEditing(selected)}>编辑家具属性</button>
-              <button
+              {!readOnly&&<button onClick={() => setEditing(selected)}>编辑家具属性</button>}
+              {!readOnly&&<button
                 onClick={() =>
                   void run(async () => {
                     const s = await bridge.call("snapshot");
@@ -404,10 +428,10 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
                 }
               >
                 预览鼠尾草绿
-              </button>
+              </button>}
             </div>
           )}
-          <div className="starter-actions">
+          {!readOnly&&<div className="starter-actions">
             <button
               className="apply-scene"
               disabled={busy || applying || !bridge.ready}
@@ -439,22 +463,22 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
             >
               重新载入场景
             </button>
-          </div>
+          </div>}
           {sceneNotice && (
             <div className="scene-notice" role="status">
               {sceneNotice}
             </div>
           )}
-          <button
+          </div>
+          {!readOnly&&<button
             className="chat-launcher"
             aria-expanded={chat}
             onClick={() => setChat((x) => !x)}
           >
             聊聊你的家 <small>空间咨询</small>
-          </button>
-          {!paper&&conversations}
+          </button>}
+          {paper?<div className="paper-chat-surface">{conversations}</div>:conversations}
         </section>
-        {paper&&<div className="paper-chat-stage" data-open={chat}>{conversations}{!chat&&<div className="paper-chat-closed"><span className={typeEyebrow}>consultation</span><h2>继续聊聊你的家。</h2><p>之前的消息、文字草稿和本轮附件仍在。</p><button type="button" onClick={()=>setChat(true)}>打开对话</button></div>}</div>}
         {panel ? (
           <RequirementsPanel
             project={project}
@@ -463,6 +487,7 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
             commit={commit}
             onClose={() => setPanel(false)}
             onError={setError}
+            readOnly={readOnly}
           />
         ) : !paper ? (
           <button className="panel-reopen" onClick={() => setPanel(true)}>
@@ -470,8 +495,8 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
           </button>
         ) : null}
       </main>
-      {paper&&<nav className="paper-mobile-tabs" aria-label="工作区视图"><button type="button" aria-pressed={!chat} onClick={()=>setChat(false)}>空间预览</button><button type="button" aria-pressed={chat} onClick={()=>setChat(true)}>咨询对话</button><button type="button" aria-pressed={panel} onClick={()=>setPanel(v=>!v)}>需求记录</button></nav>}
-      {editing && <ObjectEditor key={editing} projectId={project.id} objectId={editing} project={project} commit={commit}
+      {paper&&<nav className="paper-mobile-tabs" aria-label="工作区视图"><button type="button" aria-pressed={!chat} onClick={()=>setChat(false)}>空间预览</button>{!readOnly&&<button type="button" aria-pressed={chat} onClick={()=>setChat(true)}>咨询对话</button>}<button type="button" aria-pressed={panel} onClick={()=>setPanel(v=>!v)}>需求记录</button></nav>}
+      {editing && !readOnly && <ObjectEditor key={editing} projectId={project.id} objectId={editing} project={project} commit={commit}
         restore={async()=>{if(previewing.current===editing){previewing.current=null;await bridge.call('load',{scene:current.current.scene,version:current.current.version});loadedScene.current=canonical(current.current.scene);setSaved(true);}}}
         preview={async id=>{
           if(!saved&&!previewing.current)throw new Error('场景存在未保存修改，请先保存项目');
@@ -494,8 +519,8 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
         setSaved(true);
 
       }}/>}
-      {questionnaire&&<QuestionnairePanel project={project} roomId={room} commit={commit} keyboard={keyboard} onClose={()=>setQuestionnaire(false)}/>}
-      {delivery&&<DeliveryPanel project={project} commit={commit} onClose={()=>setDelivery(false)} onQuestionnaire={()=>{setDelivery(false);setQuestionnaire(true);}}/>}
+      {questionnaire&&!readOnly&&<QuestionnairePanel project={project} roomId={room} commit={commit} keyboard={keyboard} onClose={()=>setQuestionnaire(false)}/>} 
+      {delivery&&<DeliveryPanel project={project} commit={commit} onClose={()=>setDelivery(false)} onQuestionnaire={()=>{setDelivery(false);if(!readOnly)setQuestionnaire(true);}} readOnly={readOnly}/>} 
       {brief && (
         <BriefPanel
           project={project}
@@ -504,6 +529,7 @@ export function Workbench({ initial, paper = false }: { initial: ProjectData; pa
           onError={setError}
         />
       )}
+      {collaboration&&<DesignerBoard project={project} role={role} focusRoom={(id)=>void run(()=>focus(id))} focusObject={async(id)=>{await bridge.call('select',{object_id:id});setSelected(id);}} onClose={()=>setCollaboration(false)}/>} 
       {error && (
         <div className="toast error" role="alert">
           {error}

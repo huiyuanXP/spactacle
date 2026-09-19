@@ -26,7 +26,7 @@ export function ModelPicker({value,onChange,disabled}: {value:string;onChange:(i
   return <DropdownMenu.Root><DropdownMenu.Trigger asChild><button type="button" className="model-trigger" aria-label="选择咨询模型" disabled={disabled||loading} title={value||'服务端默认模型'}><span>{loading?'读取模型…':value||'默认模型'}</span><ChatIcon name="chevron"/></button></DropdownMenu.Trigger><DropdownMenu.Portal><DropdownMenu.Content className="paper-menu model-menu" align="end" side="top" sideOffset={10} collisionPadding={12}>
     <DropdownMenu.Label className="menu-eyebrow">本轮咨询模型</DropdownMenu.Label>
     <DropdownMenu.RadioGroup value={value} onValueChange={onChange}>{data?.models.map(m=><DropdownMenu.RadioItem key={m.id} value={m.id} className="paper-menu-item"><span className="model-check"><DropdownMenu.ItemIndicator>✓</DropdownMenu.ItemIndicator></span><span>{m.id}</span>{m.is_default&&<small>默认</small>}</DropdownMenu.RadioItem>)}</DropdownMenu.RadioGroup>
-    <p className="menu-note">{error||data?.notice}</p>
+    <p className="menu-note">{error||data?.notice}<br/>此选择用于咨询对话；图片识别和语音转写仍使用各自的专用服务。</p>
     <DropdownMenu.Item className="paper-menu-item" onSelect={()=>{setLoading(true);loadModels().then(d=>{setData(d);setError('');if(!d.models.some(m=>m.id===value))onChange(d.default_id??'');}).catch(()=>setError('模型列表加载失败，请稍后重试。')).finally(()=>setLoading(false));}}>重新读取列表</DropdownMenu.Item>
   </DropdownMenu.Content></DropdownMenu.Portal></DropdownMenu.Root>;
 }

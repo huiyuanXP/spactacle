@@ -13,7 +13,7 @@ import { buildReview } from "./review.js";
 import { registerIntake } from './intake.js';
 import { registerDelivery } from './delivery.js';
 import { registerDocuments } from './document-routes.js';
-import { listChatModels, resolveModel } from './provider.js';
+import { isChatModelId, listChatModels, resolveModel } from './provider.js';
 export function registerBusiness(app: FastifyInstance, store: Store) {
   registerIntake(app, store);
   registerDelivery(app, store);
@@ -91,7 +91,7 @@ export function registerBusiness(app: FastifyInstance, store: Store) {
         room_id: Id,
         text: z.string().trim().min(1).max(8000),
         attachment_ids: z.array(Id).max(6).optional(),
-        model_id: z.string().min(1).max(200).optional(),
+        model_id: z.string().min(1).max(200).refine(isChatModelId,'模型标识无效').optional(),
       }).parse(req.body);
     // Reject an unlisted selection before persisting a message or starting work.
     if (b.model_id) await resolveModel(b.model_id);

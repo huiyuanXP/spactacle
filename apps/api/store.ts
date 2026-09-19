@@ -1,7 +1,7 @@
 import {recomputeGeometry} from "./geometry.js";
 import { acceptedReferenceIssue } from './reference-integrity.js';
 import { PGlite } from "@electric-sql/pglite";
-import { randomUUID, createHash } from "node:crypto";
+import { randomUUID, createHash, randomBytes } from "node:crypto";
 import type {
   ProjectData,
   ProjectEvent,
@@ -28,7 +28,11 @@ export class Store {
       CREATE TABLE IF NOT EXISTS commands(project_id text NOT NULL, request_id text NOT NULL, fingerprint text NOT NULL, response jsonb NOT NULL, PRIMARY KEY(project_id,request_id));
       CREATE TABLE IF NOT EXISTS events(event_id bigserial PRIMARY KEY, project_id text NOT NULL, project_version integer NOT NULL, type text NOT NULL, payload jsonb NOT NULL);
       CREATE INDEX IF NOT EXISTS events_project_idx ON events(project_id,event_id);
-      CREATE TABLE IF NOT EXISTS sessions(token_hash text PRIMARY KEY, owner_id text NOT NULL, expires_at timestamptz NOT NULL);
+      CREATE TABLE IF NOT EXISTS sessions(token_hash text PRIMARY KEY, owner_id text NOT NULL, role text NOT NULL DEFAULT 'owner', project_id text, member_id text, expires_at timestamptz NOT NULL);
+      CREATE TABLE IF NOT EXISTS project_members(project_id text NOT NULL, owner_id text NOT NULL, member_id text NOT NULL, role text NOT NULL, invite_hash text UNIQUE, created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(project_id, member_id));
+      ALTER TABLE sessions ADD COLUMN IF NOT EXISTS role text NOT NULL DEFAULT 'owner';
+      ALTER TABLE sessions ADD COLUMN IF NOT EXISTS project_id text;
+      ALTER TABLE sessions ADD COLUMN IF NOT EXISTS member_id text;
       UPDATE projects SET data=jsonb_set(data,'{reference_plans}','[]'::jsonb) WHERE NOT data ? 'reference_plans';
       UPDATE projects SET data=jsonb_set(data,'{object_messages}','[]'::jsonb) WHERE NOT data ? 'object_messages';
       UPDATE projects SET data=jsonb_set(data,'{brief_version}',to_jsonb(version)) WHERE NOT data ? 'brief_version';`);
@@ -169,6 +173,20 @@ export class Store {
       [id, version, type, JSON.stringify(payload)],
     );
     return Number(r.rows[0].event_id);
+  }
+  async createDesignerInvite(id: string, owner: string) {
+    const code = randomBytes(24).toString('base64url');
+    const memberId = 'designer:' + randomUUID();
+    await this.db.transaction(async (tx) => {
+      const row = (await tx.query<{ owner_id: string }>("SELECT owner_id FROM projects WHERE id=$1 AND owner_id=$2 FOR UPDATE", [id, owner])).rows[0];
+      if (!row) throw new HttpError(404, '项目不存在或无权访问');
+      await tx.query("DELETE FROM project_members WHERE project_id=$1 AND role='designer'", [id]);
+      await tx.query("INSERT INTO project_members(project_id,owner_id,member_id,role,invite_hash) VALUES($1,$2,$3,'designer',$4)", [id, row.owner_id, memberId, createHash('sha256').update(code).digest('hex')]);
+    });
+    return { project_id: id, role: 'designer' as const, code, member_id: memberId };
+  }
+  async findDesignerInvite(code: string) {
+    return (await this.db.query<{ project_id: string; owner_id: string; member_id: string }>("SELECT project_id,owner_id,member_id FROM project_members WHERE role='designer' AND invite_hash=$1", [createHash('sha256').update(code).digest('hex')])).rows[0] ?? null;
   }
   async events(id: string, after: number) {
     const r = await this.db.query<ProjectEvent>(

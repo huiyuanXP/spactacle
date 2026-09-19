@@ -80,7 +80,7 @@ export function BriefPanel({
     </div>
   );
   return (
-    <div className="brief-backdrop">
+    <div className="brief-backdrop" onPointerDown={e=>{if(e.target===e.currentTarget)onClose();}}>
       <section
         className="brief-dialog"
         role="dialog"

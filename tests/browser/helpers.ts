@@ -1,9 +1,11 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, realpathSync } from "node:fs";
+import { resolve, sep } from "node:path";
 import { expect, type Page } from "@playwright/test";
 export async function login(page: Page) {
   // Dedicated fixture credentials, never the production owner's project store.
-  const code = readFileSync(resolve(".runtime/browser-test-data/owner-access-code"), "utf8").trim();
+  const dataDir=realpathSync(resolve(process.env.RENOVATION_TEST_DATA_DIR||'.runtime/browser-test-data'));
+  if(!dataDir.startsWith(realpathSync(resolve('.runtime'))+sep))throw Error('Browser credentials must belong to an isolated .runtime test database');
+  const code = readFileSync(resolve(dataDir,'owner-access-code'), "utf8").trim();
   const response = await page.request.post("/api/session/login", {
     data: { code },
   });

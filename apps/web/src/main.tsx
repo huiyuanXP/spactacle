@@ -5,7 +5,9 @@ import { api } from "./api.js";
 import "./style.css";
 import "./workbench.css";
 import { Workbench } from "./Workbench.js";
+import type { UserRole } from "./Workbench.js";
 import './paper.css';
+import './collaboration.css';
 const paper = location.pathname.replace(/\/$/, '') === '/new-ui';
 document.documentElement.classList.toggle('paper-route',paper);
 try { document.documentElement.dataset.theme=localStorage.getItem('roomnote:paper-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); } catch { document.documentElement.dataset.theme='light'; }
@@ -107,17 +109,19 @@ function Login({ onDone }: { onDone: () => void }) {
 }
 function App() {
   const [auth, setAuth] = useState<boolean | null>(null),
+    [role, setRole] = useState<UserRole>('owner'),
     [project, setProject] = useState<ProjectData | null>(null),
     [error, setError] = useState("");
   async function boot() {
     try {
-      await api("/api/session");
+      const session = await api<{role:UserRole}>('/api/session');
       setAuth(true);
+      setRole(session.role);
       const result = await api<{ projects: { id: string }[] }>("/api/projects");
       const requested = new URLSearchParams(location.search).get("project");
-      const p = requested !== null ? await api<ProjectData>(`/api/projects/${encodeURIComponent(requested)}`) : result.projects.length
-        ? await api<ProjectData>(`/api/projects/${result.projects[0].id}`)
-        : await api<ProjectData>("/api/projects", {});
+      const id = requested !== null ? requested : result.projects[0]?.id;
+      if(!id) throw new Error('当前账户没有可访问项目');
+      const p = session.role === 'designer' ? (await api<{project:ProjectData}>(`/api/projects/${encodeURIComponent(id)}/collaboration/view`)).project : await api<ProjectData>(`/api/projects/${encodeURIComponent(id)}`);
       setProject(p);
     } catch (err) {
       if ((err as any).status === 401) setAuth(false);
@@ -128,7 +132,7 @@ function App() {
     void boot();
   }, []);
   if (auth === false) return <Login onDone={() => void boot()} />;
-  if (project) return <Workbench initial={project} paper={paper} />;
+  if (project) return <Workbench initial={project} paper={paper} role={role} />;
   return (
     <div className="boot">
       <Mark />

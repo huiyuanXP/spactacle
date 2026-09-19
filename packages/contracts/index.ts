@@ -139,6 +139,17 @@ export type Suggestion = {
   status: "proposed" | "accepted" | "rejected" | "superseded";
   scope: string[];
 };
+export type CollaborationSuggestion = {
+  id: string;
+  author_id: string;
+  author_role: 'designer';
+  room_id: string | null;
+  object_id?: string;
+  text: string;
+  status: 'proposed' | 'accepted' | 'rejected';
+  base_version: number;
+  created_at: string;
+};
 export type Report = {
   id: string;
   brief_version: number;
@@ -153,6 +164,7 @@ export type ObjectConversation={id:string;project_id:string;room_id:string;objec
 export type ReferencePlan={id:string;room_id:string;raw_text:string;status:'running'|'proposed'|'failed';text:string;lines:{asset_id:string;quantity:number;object_ids:string[]}[]};
 export type GeometryDiagnostic = {id:string;rule:"boundary"|"collision"|"unknown";rule_version:number;object_ids:string[];status:"active"|"resolved";severity:"warning"|"uncertain";evidence:string;advice:string;first_version:number;last_version:number};
 export type ProjectData = {
+  collaboration_suggestions?: CollaborationSuggestion[];
   intake_answers?: IntakeAnswer[];
   intake_questions?: IntakeProposal[];
   delivery_snapshots?: DeliverySnapshot[];

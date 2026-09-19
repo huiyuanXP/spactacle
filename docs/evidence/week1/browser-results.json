@@ -1,9 +1,10 @@
 {
   "config": {
     "argv": [
-      "/home/ubuntu/aws-hackthon/renovation-consultation/.runtime/node-v24.21.0-linux-x64/bin/node",
+      "/home/ubuntu/.nvm/versions/node/v24.21.0/bin/node",
       "/home/ubuntu/aws-hackthon/renovation-consultation/node_modules/.bin/playwright",
-      "test"
+      "test",
+      "tests/browser/new-ui-sheets.spec.ts"
     ],
     "configFile": "/home/ubuntu/aws-hackthon/renovation-consultation/playwright.config.ts",
     "rootDir": "/home/ubuntu/aws-hackthon/renovation-consultation/tests/browser",
@@ -47,7 +48,7 @@
       [
         "json",
         {
-          "outputFile": "docs/evidence/week1/browser-results.json"
+          "outputFile": "/home/ubuntu/aws-hackthon/renovation-consultation/docs/evidence/week1/browser-results.json"
         }
       ]
     ],
@@ -65,6 +66,8 @@
       "command": "bash scripts/run-workbench.sh",
       "env": {
         "PORT": "4175",
+        "APP_WEB_DIST": "/home/ubuntu/aws-hackthon/renovation-consultation/apps/web/dist",
+        "APP_ENGINE_DIR": "/home/ubuntu/aws-hackthon/renovation-consultation/.runtime/week2-release/engine",
         "APP_ORIGIN": "http://127.0.0.1:4175",
         "APP_DATA_DIR": "/home/ubuntu/aws-hackthon/renovation-consultation/.runtime/browser-test-data"
       },
@@ -75,18 +78,18 @@
   },
   "suites": [
     {
-      "title": "01-engine.spec.ts",
-      "file": "01-engine.spec.ts",
+      "title": "new-ui-sheets.spec.ts",
+      "file": "new-ui-sheets.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "real OpenPlan3D: rendering, navigation, selection, native JSON save/reload and responsive layout",
-          "ok": true,
+          "title": "paper desktop sheets: readable questionnaire and delivery in light and dark",
+          "ok": false,
           "tags": [],
           "tests": [
             {
-              "timeout": 60000,
+              "timeout": 120000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -95,77 +98,136 @@
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 42989,
-                  "errors": [],
+                  "status": "timedOut",
+                  "duration": 120201,
+                  "error": {
+                    "message": "\u001b[31mTest timeout of 120000ms exceeded.\u001b[39m",
+                    "stack": "\u001b[31mTest timeout of 120000ms exceeded.\u001b[39m"
+                  },
+                  "errors": [
+                    {
+                      "message": "\u001b[31mTest timeout of 120000ms exceeded.\u001b[39m"
+                    },
+                    {
+                      "location": {
+                        "file": "/home/ubuntu/aws-hackthon/renovation-consultation/tests/browser/new-ui-sheets.spec.ts",
+                        "column": 12,
+                        "line": 24
+                      },
+                      "message": "Error: browserContext.close: Test ended.\nBrowser logs:\n\n<launching> /home/ubuntu/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-dev-shm-usage --use-angle=swiftshader --enable-unsafe-swiftshader --user-data-dir=/tmp/playwright_chromiumdev_profile-q2Xyvl --remote-debugging-pipe --no-startup-window\n<launched> pid=1530383\n[pid=1530383][err] [0916/154854.687146:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.\n[pid=1530383] <gracefully close start>\n\n  22 |     }\n  23 |     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect(errors).toEqual([]);\n> 24 |   }finally{await context.close();}\n     |            ^\n  25 | });\n  26 |\n    at /home/ubuntu/aws-hackthon/renovation-consultation/tests/browser/new-ui-sheets.spec.ts:24:12"
+                    }
+                  ],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-11T14:59:20.932Z",
+                  "startTime": "2026-09-16T15:48:54.526Z",
                   "annotations": [],
-                  "attachments": []
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/home/ubuntu/aws-hackthon/renovation-consultation/.runtime/test-results/new-ui-sheets-paper-deskto-305c1--delivery-in-light-and-dark/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/home/ubuntu/aws-hackthon/renovation-consultation/.runtime/test-results/new-ui-sheets-paper-deskto-305c1--delivery-in-light-and-dark/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/home/ubuntu/aws-hackthon/renovation-consultation/.runtime/test-results/new-ui-sheets-paper-deskto-305c1--delivery-in-light-and-dark/trace.zip"
+                    }
+                  ]
                 }
               ],
-              "status": "expected"
+              "status": "unexpected"
             }
           ],
-          "id": "1cf84df510303d47d4e0-48357df1996e2714f97e",
-          "file": "01-engine.spec.ts",
-          "line": 4,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "02-05-workflow.spec.ts",
-      "file": "02-05-workflow.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
+          "id": "4bbbd9c563aa3dcdea46-c52a10a4279041dad85d",
+          "file": "new-ui-sheets.spec.ts",
+          "line": 5,
+          "column": 34
+        },
         {
-          "title": "room panel persistence, unchanged geometry, chat draft and stale review",
+          "title": "paper phone sheets: readable questionnaire and delivery in light and dark",
           "ok": true,
           "tags": [],
           "tests": [
             {
-              "timeout": 60000,
+              "timeout": 120000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
               "projectName": "",
               "results": [
                 {
-                  "workerIndex": 0,
+                  "workerIndex": 1,
                   "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 44886,
-                  "errors": [],
+                  "status": "interrupted",
+                  "duration": 80883,
+                  "error": {
+                    "message": "Error: browserContext.close: Test ended.\nBrowser logs:\n\n<launching> /home/ubuntu/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-dev-shm-usage --use-angle=swiftshader --enable-unsafe-swiftshader --user-data-dir=/tmp/playwright_chromiumdev_profile-933YDk --remote-debugging-pipe --no-startup-window\n<launched> pid=1531451\n[pid=1531451][err] [0916/155056.312592:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.\n[pid=1531451] <gracefully close start>",
+                    "stack": "Error: browserContext.close: Test ended.\nBrowser logs:\n\n<launching> /home/ubuntu/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-dev-shm-usage --use-angle=swiftshader --enable-unsafe-swiftshader --user-data-dir=/tmp/playwright_chromiumdev_profile-933YDk --remote-debugging-pipe --no-startup-window\n<launched> pid=1531451\n[pid=1531451][err] [0916/155056.312592:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.\n[pid=1531451] <gracefully close start>\n    at /home/ubuntu/aws-hackthon/renovation-consultation/tests/browser/new-ui-sheets.spec.ts:24:12",
+                    "location": {
+                      "file": "/home/ubuntu/aws-hackthon/renovation-consultation/tests/browser/new-ui-sheets.spec.ts",
+                      "column": 12,
+                      "line": 24
+                    },
+                    "snippet": "  22 |     }\n  23 |     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect(errors).toEqual([]);\n> 24 |   }finally{await context.close();}\n     |            ^\n  25 | });\n  26 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/home/ubuntu/aws-hackthon/renovation-consultation/tests/browser/new-ui-sheets.spec.ts",
+                        "column": 12,
+                        "line": 24
+                      },
+                      "message": "Error: browserContext.close: Test ended.\nBrowser logs:\n\n<launching> /home/ubuntu/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-dev-shm-usage --use-angle=swiftshader --enable-unsafe-swiftshader --user-data-dir=/tmp/playwright_chromiumdev_profile-933YDk --remote-debugging-pipe --no-startup-window\n<launched> pid=1531451\n[pid=1531451][err] [0916/155056.312592:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.\n[pid=1531451] <gracefully close start>\n\n  22 |     }\n  23 |     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect(errors).toEqual([]);\n> 24 |   }finally{await context.close();}\n     |            ^\n  25 | });\n  26 |\n    at /home/ubuntu/aws-hackthon/renovation-consultation/tests/browser/new-ui-sheets.spec.ts:24:12"
+                    }
+                  ],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-09-11T15:00:04.188Z",
+                  "startTime": "2026-09-16T15:50:56.129Z",
                   "annotations": [],
-                  "attachments": []
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/home/ubuntu/aws-hackthon/renovation-consultation/.runtime/test-results/new-ui-sheets-paper-phone--d58ca--delivery-in-light-and-dark/test-failed-1.png"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/home/ubuntu/aws-hackthon/renovation-consultation/.runtime/test-results/new-ui-sheets-paper-phone--d58ca--delivery-in-light-and-dark/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/home/ubuntu/aws-hackthon/renovation-consultation/tests/browser/new-ui-sheets.spec.ts",
+                    "column": 12,
+                    "line": 24
+                  }
                 }
               ],
-              "status": "expected"
+              "status": "skipped"
             }
           ],
-          "id": "8b581021542fbb05dc47-0cfbbae3fb7a28f7653e",
-          "file": "02-05-workflow.spec.ts",
-          "line": 3,
-          "column": 1
+          "id": "4bbbd9c563aa3dcdea46-caa21a7040a7824ad895",
+          "file": "new-ui-sheets.spec.ts",
+          "line": 5,
+          "column": 34
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-09-11T14:59:16.030Z",
-    "duration": 93282.085,
-    "expected": 2,
-    "skipped": 0,
-    "unexpected": 0,
+    "startTime": "2026-09-16T15:48:48.899Z",
+    "duration": 208787.688,
+    "expected": 0,
+    "skipped": 1,
+    "unexpected": 1,
     "flaky": 0
   }
 }

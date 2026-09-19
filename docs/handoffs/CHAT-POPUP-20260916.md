@@ -1,0 +1,29 @@
+# Canvas-anchored Chat — 2026-09-16
+
+User scope: restore lower-left popup Chat; expanded desktop Chat occupies exactly the left half of the native 3D iframe viewport; fold recorded choices; present pending decisions through the actual agent conversation with upstream choice components. Retain colored user/adviser messages and publish only to `/new-ui`.
+
+Implementation:
+- Removed the separate right chat column. The popup surface has the same bounds as the native iframe; desktop expansion uses 50% of its width and 100% of its height. Phone expansion uses available canvas width to keep the composer usable. The launcher is hidden while Chat is open to avoid covering the footer. Existing room drafts remain mounted.
+- Outside pointer handling excludes the Chat and dialogs, and listens to actual pointer events in the same-origin scene document. Engine initialization/focus is not treated as an outside click.
+- Recorded-choice receipts use a collapsed details block. Full questionnaire still provides editing of stored answers.
+- New UI no longer emits a standalone queue of catalogue question cards. Pending questions are attached as `ask_intake_question` tool-call parts to the assistant message with the matching persisted proposal `run_id` and current `brief_version`. The displayed invitation/recommendation is based on that saved proposal. No extra fabricated assistant messages or claims of saved answers are inserted.
+- `makeAssistantToolUI` renders this content through the installed assistant-ui runtime. Official assistant-ui Tool UI `OptionList` is copied from https://www.tool-ui.com/r/option-list.json; only import adapters changed. Keyboard navigation/selection and option rendering are upstream code. Existing IntakeCard retains explicit submit, freeform, factual/sharing fields, idempotency, stale-version and error handling. Sources and MIT licenses are under `apps/web/src/components/tool-ui/` and `components/ui/`.
+
+Verification evidence: `.runtime/codex-runs/chat-popup-20260916/`.
+- TypeScript and final production web build passed (`index-Cjkhipff.js`, `index-tqovyLpN.css`).
+- `first/`: real agent tool + official OptionList keyboard selection, no preselection, explicit confirmation and folded persisted receipt passed. Layout assertions exposed old CSS specificity overriding the intended popup/half width.
+- `final2/`: corrected desktop and phone geometry/dismiss/draft cases passed. The runner then received SIGTERM (143); remaining cases were not claimed as passed. Its orphan listener was verified as isolated 4175 / browser-test-data before stopping only that process.
+- `frozen-agent2/`: installed frozen runtime passed the real provider selection/confirmation/reload case. The prior frozen-agent attempt hardcoded Q38, while the provider validly generated Q10; the final assertion follows the actual persisted question ID rather than assuming the model's choice.
+- The intermediate `final/` attempt was interrupted after identifying engine autofocus closing Chat; the pointer-based fix replaces that focus listener.
+- `regression-desktop2/`: frozen desktop workspace, model catalogue, keyboard menus, IME, questionnaire confirmation, draft retention and both themes passed. The preceding `regression-desktop/` startup failed after changing frozen dependency ownership because copied directory permissions prevented the service user from traversing `tsx`; frozen dependency and web files were made readable/traversable before this successful rerun.
+
+Workspace HEAD remains `b2aba327c7b80dd882216e28e6be90f371c48c2a`. Existing unrelated dirty changes are preserved; no commit of the mixed workspace is part of this follow-up. Desktop light/dark and actual agent OptionList screenshots were visually reviewed.
+- `frozen-sheets/`: desktop and phone questionnaires/delivery in both themes passed, 2/2; phone dark screenshot visually reviewed. Six distinct scoped browser scenarios have passing records across the groups above; this is not a claim of a single uninterrupted full-suite pass.
+
+Release candidate: `/opt/renovation-workbench/releases/chat-popup-20260916/app`, cloned from the active New UI polish freeze. API source and original route index are byte-identical to that release. UI source, build inputs and dependencies are frozen; the accepted new assets are served through the existing `APP_NEW_UI_DIST` route selector. No backend schema/business logic change. Publication verification is recorded below after cutover.
+
+JS SHA-256 `f0e74de2e55471447f78660cd4c8d95454bea1827eee74118407f12ef567b379`; CSS SHA-256 `aa08f842d01bfc3599ed3cd86bccb24ce4d5e8309326351889fc7629e6fcb2b5`.
+
+Published to `/new-ui` at 17:04:04 UTC. Writer stopped at 17:03:57; consistent archive `/var/backups/renovation-workbench/chat-popup-20260916/owner-data.tar`, SHA-256 `9f23a8966a90700592b168c89a419d3020aea152f97aa41a535a5945fcf90fc8`. Local entry/deep-link and owner-content checks passed; application PID 1553811. Coding-tools-mcp PID 831281 preserved. Controller receipt `/opt/renovation-workbench/control/chat-popup-20260916/receipt.json`; previous configuration in the same directory supports code rollback to new-ui-polish using current data, without restoring an older database.
+
+Public acceptance passed: exact JS/CSS SHA-256, authenticated desktop project deep link and reload, half-canvas expansion, outside dismissal, phone route/no horizontal overflow, original entry preserved, health/taskboard accessible, owner project JSON unchanged and no desktop page errors. Receipt `.runtime/deploy-chat-popup-20260916/public-result.json`; screenshots in the same private directory, including visually reviewed `public-half-canvas.png`. No owner model calls or test projects were created. Test port 4175 is closed. Scoped work complete; no additional publication step remains for this request.

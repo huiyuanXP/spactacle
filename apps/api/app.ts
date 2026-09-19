@@ -17,6 +17,7 @@ import { ObjectUpdate, objectInfo, updateObject } from "./objects.js";
 import {ObjectChatService,ObjectChatCommand,ObjectDecision} from "./object-chat.js";
 import {ReferenceService,ReferenceRequest,ReferenceDecision,ReferenceQuantity} from "./references.js";
 import {registerMedia} from "./media.js";
+import { registerCollaboration } from './collaboration.js';
 export type AppOptions = {
  referenceGenerator?: ConstructorParameters<typeof ReferenceService>[1];
   objectGenerator?: ConstructorParameters<typeof ObjectChatService>[1];
@@ -81,13 +82,22 @@ export async function buildApp(store: Store, options: AppOptions = {}) {
       const token = req.cookies.roomnote_session;
       if (!token) throw new HttpError(401, "请先输入工作台访问口令");
       const row = (
-        await store.db.query<{ owner_id: string }>(
-          "SELECT owner_id FROM sessions WHERE token_hash=$1 AND expires_at>now()",
+      await store.db.query<{ owner_id: string; role: string; project_id: string | null; member_id: string | null }>(
+          "SELECT owner_id,role,project_id,member_id FROM sessions WHERE token_hash=$1 AND expires_at>now()",
           [hash(token)],
         )
       ).rows[0];
       if (!row) throw new HttpError(401, "会话已过期，请重新登录");
       (req as any).owner = row.owner_id;
+      (req as any).role = row.role;
+      (req as any).project_id = row.project_id;
+      (req as any).member_id = row.member_id || row.owner_id;
+      const path = req.url.split('?')[0], match = path.match(/^\/api\/projects(?:\/([^/]+))?/);
+      const designerReads = ['/api/projects', '/api/projects/' + row.project_id + '/designer-board', '/api/projects/' + row.project_id + '/collaboration/view'];
+      const suggestionPath = '/api/projects/' + row.project_id + '/collaboration/suggestions';
+      const sessionPath = path === '/api/session' || path === '/api/session/logout';
+      if (row.role === 'designer' && ((match && ((match[1] && match[1] !== row.project_id) || (!designerReads.includes(path) && path !== suggestionPath))) || (!match && !sessionPath))) throw new HttpError(403, '设计师只能通过共享看板读取当前项目');
+      if (row.role === 'designer' && req.method !== 'GET' && req.method !== 'HEAD' && path !== suggestionPath && path !== '/api/session/logout') throw new HttpError(403, '设计师入口为只读；仅可提交独立设计建议');
     }
   });
   app.post(
@@ -95,15 +105,13 @@ export async function buildApp(store: Store, options: AppOptions = {}) {
     { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
     async (req, reply) => {
       const b = z.object({ code: z.string().min(1).max(200) }).parse(req.body);
-      if (
-        !timingSafeEqual(Buffer.from(hash(b.code)), Buffer.from(hash(access)))
-      )
-        throw new HttpError(401, "访问口令不正确");
       const token = randomBytes(32).toString("base64url");
-      await store.db.query(
-        "INSERT INTO sessions VALUES ($1,'owner',now()+interval '7 days')",
-        [hash(token)],
-      );
+      const invite = await store.findDesignerInvite(b.code);
+      let ownerId = '', role: 'owner' | 'designer' = 'owner', projectId: string | null = null, memberId: string | null = null;
+      if (timingSafeEqual(Buffer.from(hash(b.code)), Buffer.from(hash(access)))) ownerId = 'owner';
+      else if (invite) { ownerId = invite.owner_id; role = 'designer'; projectId = invite.project_id; memberId = invite.member_id; }
+      else throw new HttpError(401, '访问口令不正确或设计师入口已失效');
+      await store.db.query("INSERT INTO sessions(token_hash,owner_id,role,project_id,member_id,expires_at) VALUES ($1,$2,$3,$4,$5,now()+interval '7 days')", [hash(token), ownerId, role, projectId, memberId]);
       reply.setCookie("roomnote_session", token, {
         path: "/",
         httpOnly: true,
@@ -111,10 +119,10 @@ export async function buildApp(store: Store, options: AppOptions = {}) {
         secure: origin.startsWith("https:"),
         maxAge: 604800,
       });
-      return { ok: true };
+      return { ok: true, role, project_id: projectId, member_id: memberId };
     },
   );
-  app.get("/api/session", async () => ({ authenticated: true, role: "owner" }));
+  app.get("/api/session", async (req) => ({ authenticated: true, role: (req as any).role, project_id: (req as any).project_id ?? null }));
   app.post("/api/session/logout", async (req, reply) => {
     await store.db.query("DELETE FROM sessions WHERE token_hash=$1", [
       hash(req.cookies.roomnote_session || ""),
@@ -122,9 +130,7 @@ export async function buildApp(store: Store, options: AppOptions = {}) {
     reply.clearCookie("roomnote_session", { path: "/" });
     return { ok: true };
   });
-  app.get("/api/projects", async (req) => ({
-    projects: await store.list((req as any).owner),
-  }));
+  app.get("/api/projects", async (req) => { const projects = await store.list((req as any).owner); return { projects: (req as any).role === 'designer' ? projects.filter(p => p.id === (req as any).project_id) : projects }; });
   app.post("/api/projects", async (req) => store.create((req as any).owner));
   app.get("/api/projects/:id", async (req) =>
     store.get(Id.parse((req.params as any).id), (req as any).owner),
@@ -206,6 +212,7 @@ export async function buildApp(store: Store, options: AppOptions = {}) {
   });
   const consultation=registerBusiness(app, store);
   registerMedia(app,store,consultation);
+  registerCollaboration(app, store);
   app.get("/healthz", async () => ({
     ok: true,
     service: "renovation-workbench",
@@ -242,6 +249,7 @@ export async function buildApp(store: Store, options: AppOptions = {}) {
       });
     }
     const web = resolve(process.env.APP_WEB_DIST || resolve(root, "apps/web/dist"));
+    const newUiWeb = process.env.APP_NEW_UI_DIST ? resolve(process.env.APP_NEW_UI_DIST) : web;
     if (existsSync(web)) {
       await app.register(staticPlugin, {
         root: web,
@@ -258,7 +266,7 @@ export async function buildApp(store: Store, options: AppOptions = {}) {
           return reply.code(404).send({ error: "Not found" });
         return reply
           .type("text/html")
-          .send(readFileSync(resolve(web, "index.html")));
+          .send(readFileSync(resolve(/^\/new-ui\/?$/.test(req.url.split('?')[0]) ? newUiWeb : web, "index.html")));
       });
     }
   }

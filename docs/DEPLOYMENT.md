@@ -1,3 +1,72 @@
+# Active deployment — Canvas Chat popup, 2026-09-16 UTC
+
+Active freeze `/opt/renovation-workbench/releases/chat-popup-20260916/app`, service `renovation-workbench`, existing port 4173/tunnel. Healthy at 17:04:04 UTC after stopped-writer backup; app PID 1553811. Only `/new-ui` entry selects new assets `index-Cjkhipff.js` / `index-tqovyLpN.css`; original `/` retains `index-BjMYqaR6.js` / `index-DKw538SU.css`. API source and original index are byte-identical to the previous release; frozen frontend includes upstream Tool UI dependencies.
+
+Acceptance and failure records: `handoffs/CHAT-POPUP-20260916.md`. Controller receipt `/opt/renovation-workbench/control/chat-popup-20260916/receipt.json`. Consistent private backup `/var/backups/renovation-workbench/chat-popup-20260916/owner-data.tar`, SHA-256 `9f23a8966a90700592b168c89a419d3020aea152f97aa41a535a5945fcf90fc8`. Existing owner content preserved; coding-tools-mcp remains PID 831281.
+
+Rollback after verifying service identity and allowing active jobs to finish: stop workbench, verify writer/listener stopped, copy `/opt/renovation-workbench/control/chat-popup-20260916/previous-release.conf` to `/etc/systemd/system/renovation-workbench.service.d/20-release.conf`, daemon-reload and start. This returns to new-ui-polish code with current data; do not restore an older data archive over newer live data.
+
+## Previous deployment — New UI visual follow-up, 2026-09-16 UTC
+
+Active freeze: `/opt/renovation-workbench/releases/new-ui-polish-20260916/app`, service `renovation-workbench`, port 4173 and existing tunnel. Published at 16:28:37 UTC after a stopped-writer backup (stop 16:28:28). App PID at switch: 1545778; coding-tools-mcp remains 831281.
+
+Only `/new-ui`, `/new-ui/` and their query deep links select `APP_NEW_UI_DIST=.../apps/web/new-ui-dist`. This entry uses `index-EDKrB5Vf.js` / `index-IxAY2h_o.css`. `APP_WEB_DIST=.../apps/web/dist` retains the original Ticket 13 index and all old hashed assets, plus the new hashed assets. `/` therefore remains `index-BjMYqaR6.js` / `index-DKw538SU.css`. Without `APP_NEW_UI_DIST`, the previous shared-entry behavior remains.
+
+Runtime copied from the active Ticket 13 freeze, with only the narrow entry-selection server change, accepted UI source and hashed assets added. No dependency, engine or business/data logic update. Frozen-release desktop and phone browser checks passed, and a routing/API-protection test and TypeScript check passed. Receipt and screenshots: `docs/handoffs/PAPER-UI-POLISH-20260916.md`.
+
+Rollback: after confirming this service identity and allowing active tasks to finish, stop `renovation-workbench`, verify its writer/4173 listener has stopped, copy `/opt/renovation-workbench/control/new-ui-polish-20260916/previous-release.conf` to `/etc/systemd/system/renovation-workbench.service.d/20-release.conf`, daemon-reload and start the service. This restores Ticket 13 code using current data. Root-private backup `/var/backups/renovation-workbench/new-ui-polish-20260916/owner-data.tar`, SHA-256 `c3e6ebf1e98621b09c1acbee124e27c1b3b12dc74e27691fa1218edb42f5899c`, is not an automatic database rollback.
+
+## Previous deployment — Ticket 13, 2026-09-16 UTC
+
+Public **https://prod.huiyuanxp.com** runs `/opt/renovation-workbench/releases/ticket13-20260916T160000Z/app` through the existing 127.0.0.1:4173 service and tunnel. The service was stopped at 16:08:36 UTC, the live `.data` directory was consistently archived, and the new runtime became healthy at 16:08:42 UTC.
+
+- Active release: `/opt/renovation-workbench/releases/ticket13-20260916T160000Z/app`; public bundle `index-BjMYqaR6.js` contains `设计师看板`.
+- Immediate code fallback configuration: `/opt/renovation-workbench/control/ticket13-20260916T160000Z/previous-release.conf`.
+- Consistent data archive: `/var/backups/renovation-workbench/ticket13-20260916T160000Z/owner-data.tar`, SHA-256 `4947db1e332b7e7b1e4cf768dc70dc56dffb9d9d59db9eea96463833b20a08b5`.
+- Rollback keeps current data: stop the service, copy the saved previous-release configuration to the active drop-in, run daemon-reload, then start the service. Never unpack an older owner-data archive over newer live data.
+
+## Previous active deployment — Paper UI, 2026-09-16
+
+Public **https://prod.huiyuanxp.com/new-ui** (also `/new-ui/` and project query deep links), local127.0.0.1:4173/new-ui. Original `/` shares the refactored chat; `/todo` and the existing tunnel remain. No extra public port. Older release sections below are historical.
+
+- Active frozen runtime: `/opt/renovation-workbench/releases/paper-ui-20260916T150735Z/app`. Do not rebuild/edit it.
+- Immediate complete fallback: `/opt/renovation-workbench/releases/intake-v2-20260915T083433Z/app`.
+- Service `renovation-workbench.service`, Userubuntu, enabled; MainPID1521166/applicationPID1521186 at verification. Active drop-in `/etc/systemd/system/renovation-workbench.service.d/20-release.conf`.
+- Root-owned controller/manifest `/opt/renovation-workbench/control/paper-ui-20260916T150735Z`. In this directory `week1-override.conf` means saved intake-v2 fallback and `week2-override.conf` means new Paper UI; actual paths are authoritative. Controller stage label `activating_intake_v2` is inherited; release_id/WorkingDirectory identify Paper UI.
+- Owner data remains `/home/ubuntu/aws-hackthon/renovation-consultation/.data`, one writer; existing.env/.scratch links retained. Node24.21.0 and dependencies frozen, old hashed web files retained. New assets index-C48VyUHk.js/index-TJMEpMvL.css. Coding-tools-mcp831281 unchanged.
+
+Source is the accepted final77-file Paper UI archive, not newer workspace collaboration changes. Full identity, fresh51/51 tests,7 distinct browser passes and retained failures: `docs/handoffs/PAPER-UI-20260916.md`.8-project synthetic model metadata compatibility and stopped-owner-copy new/old/new checks passed.54 local/public groups plus real public-browser authenticated deep link/reload/theme/mobile/original-route checks passed without owner mutations.1owner project and2existing attachments preserved.
+
+Writer stopped15:30:52UTC, healthy15:31:19, HTTP verification complete15:31:41. Recovery timer stopped after completion. Actual bounded command (execution record, not reusable updater):
+
+```bash
+sudo -n timeout --signal=TERM 480s python3 /opt/renovation-workbench/control/paper-ui-20260916T150735Z/activate.py
+```
+
+Private consistent archive `/var/backups/renovation-workbench/paper-ui-20260916T150735Z/attempt1/owner-data.tar` (45363200bytes), SHA256 `42f00167e5bc1836cb8cad8a594982267f8c8f084e797b66b78436a07ca2ee7b`.1001file hashes matched restored copy and unchanged stopped source. Baseline1project,2attachments,79commands,128events,9sessions. Raw snapshots, verification cookie and digests remain root-private. Sanitized `.runtime/deploy-receipts/paper-ui-20260916T150735Z/result.json`.
+
+## Code-only rollback to intake-v2
+
+Verify current service identity and allow owner jobs to finish. The recovery function accepts only Paper UI/intake-v2 cwd, stops and verifies the writer/cgroup/listener, installs the saved complete intake-v2 override and starts with **current data**:
+
+```bash
+sudo python3 - <<'PYCODE'
+import importlib.util
+path = '/opt/renovation-workbench/control/paper-ui-20260916T150735Z/recover.py'
+spec = importlib.util.spec_from_file_location('paper_release_recovery', path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+module.recover()
+PYCODE
+curl -fsS --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:4173/healthz
+```
+
+Verify fallback cwd/resources, public health and authenticated content; update CURRENT. Old code lacks Paper UI/model-picker capabilities. Initialization roundtrip does not certify every old-version edit of new metadata. Explicit recover() is required for manual rollback because the watchdog entrypoint exits after deployment completion. No database was restored; never unpack an old backup over current/running data. Separately assess newer writes before any database restoration.
+
+---
+
+## Historical intake-v2 / Week2 / Week1 records — active paths above supersede them
+
 # Active deployment — Agent / intake v2, 2026-09-15
 
 https://prod.huiyuanxp.com now serves `intake-v2-20260915T083433Z`. `/todo` remains on the same existing tunnel to127.0.0.1:4173. The prior Week2 section below is historical; use the paths here for the active release.

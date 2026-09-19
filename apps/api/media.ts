@@ -1,4 +1,5 @@
 import {ChatService} from './chat.js';
+import {isChatModelId,resolveModel} from './provider.js';
 import {canonical} from '../../packages/contracts/canonical.js';
 import {z} from 'zod';import {randomUUID} from 'node:crypto';
 import {Command,Id} from '../../packages/contracts/index.js';import {Store,HttpError} from './store.js';import {config} from './config.js';import {addSuggestion} from './requirements.js';
@@ -42,7 +43,7 @@ export class MediaService{
    throw error;
  }
  }
- async confirm(id:string,owner:string,b:any){const body=Command.extend({attachment_id:Id,transcript:z.string().min(1).max(4000),confirmed:z.literal(true)}).strict().parse(b);await this.get(id,owner,body.attachment_id);const p=await this.store.get(id,owner);const a=p.attachments?.find(a=>a.id===body.attachment_id&&a.mime==='audio/wav');if(!a)throw new HttpError(404,'音频附件不存在');if(!this.chat)throw new HttpError(503,'咨询服务未连接，原件与转写已保留');const result=await this.chat.start(id,owner,{request_id:body.request_id,expected_version:body.expected_version,room_id:a.room_id,text:body.transcript,attachment_id:a.id});return result.project;}
+ async confirm(id:string,owner:string,b:any){const body=Command.extend({attachment_id:Id,transcript:z.string().min(1).max(4000),confirmed:z.literal(true),model_id:z.string().min(1).max(200).refine(isChatModelId,'模型标识无效').optional()}).strict().parse(b);await this.get(id,owner,body.attachment_id);const p=await this.store.get(id,owner);const a=p.attachments?.find(a=>a.id===body.attachment_id&&a.mime==='audio/wav');if(!a)throw new HttpError(404,'音频附件不存在');if(!this.chat)throw new HttpError(503,'咨询服务未连接，原件与转写已保留');if(body.model_id)await resolveModel(body.model_id);const result=await this.chat.start(id,owner,{request_id:body.request_id,expected_version:body.expected_version,room_id:a.room_id,text:body.transcript,attachment_id:a.id,...(body.model_id?{model_id:body.model_id}:{})});return result.project;}
 
 }
 export function registerMedia(app:any,store:Store,chat:ChatService){const media=new MediaService(store,fetch,chat);const scope=(req:any)=>({id:Id.parse(req.params.id),owner:req.owner});

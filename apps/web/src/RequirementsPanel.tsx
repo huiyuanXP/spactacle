@@ -1,5 +1,7 @@
 import {ReferencePanel} from './ReferencePanel.js';
 import React, { useState } from "react";
+import {PanelResize} from './PanelResize.js';
+import {useOutsideDismiss} from './useOutsideDismiss.js';
 import {
   fields,
   type ProjectData,
@@ -35,12 +37,14 @@ function Field({
   fieldKey,
   commit,
   onError,
+  readOnly = false,
 }: {
   project: ProjectData;
   roomId: string | null;
   fieldKey: keyof typeof fields;
   commit: Commit;
   onError: (s: string) => void;
+  readOnly?: boolean;
 }) {
   const current = project.requirements.find(
       (r) => r.room_id === roomId && r.field_key === fieldKey,
@@ -120,7 +124,7 @@ function Field({
           type={number ? "number" : "text"}
           step={number ? "any" : undefined}
           value={text}
-          disabled={state !== "answered"}
+          disabled={readOnly || state !== "answered"}
           maxLength={2000}
           placeholder={
             suggestion
@@ -140,7 +144,7 @@ function Field({
           }
         />
         <button
-          disabled={busy}
+          disabled={busy || readOnly}
           aria-label={`保存${label}`}
           onClick={() => void save()}
         >
@@ -151,6 +155,7 @@ function Field({
         <select
           aria-label={`${label}回答状态`}
           value={state}
+          disabled={readOnly}
           onChange={(e) =>
             setDraft((d) => ({
               text,
@@ -181,6 +186,7 @@ function Field({
           </div>
           <button
             className="adopt"
+            disabled={readOnly}
             onClick={async () => {
               try {
                 await commit("/suggestions/adopt", {
@@ -206,6 +212,7 @@ export function RequirementsPanel({
   commit,
   onClose,
   onError,
+  readOnly = false,
 }: {
   project: ProjectData;
   roomId: string;
@@ -213,7 +220,10 @@ export function RequirementsPanel({
   commit: Commit;
   onClose: () => void;
   onError: (s: string) => void;
+  readOnly?: boolean;
 }) {
+  const [panelWidth, setPanelWidth] = useState(430);
+  useOutsideDismiss(true,'.requirements-panel, .paper-rail, .paper-mobile-tabs',onClose);
   const room = project.rooms.find((r) => r.id === roomId)!;
   const proposals = project.suggestions.filter(
     (s) => s.status === "proposed" && s.room_id === roomId,
@@ -222,11 +232,19 @@ export function RequirementsPanel({
     (r) => r.answer_state === "answered",
   ).length;
   return (
-    <aside className="requirements-panel" aria-label="需求收集面板">
-      <ReferencePanel key={roomId} project={project} roomId={roomId} commit={commit}/>
+    <aside className="requirements-panel" aria-label="需求收集面板" style={{"--panel-width": `${panelWidth}px`} as React.CSSProperties}>
+      <PanelResize width={panelWidth} onChange={setPanelWidth} max={620} label="调整需求面板宽度" />
+      {!readOnly && (
+        <ReferencePanel
+          key={roomId}
+          project={project}
+          roomId={roomId}
+          commit={commit}
+        />
+      )}
       <div className="panel-header">
         <div>
-          <span className="eyebrow">YOUR DESIGN BRIEF</span>
+          <span className="eyebrow">需求记录 / 你的正式偏好</span>
           <h2>把家的想法，慢慢填满</h2>
         </div>
         <button
@@ -285,12 +303,14 @@ export function RequirementsPanel({
                 fieldKey={k}
                 commit={commit}
                 onError={onError}
-              />
+                readOnly={readOnly}
+        />
             ))}
           </div>
           {proposals.length > 1 && (
             <button
               className="group-adopt"
+              disabled={readOnly}
               onClick={async () => {
                 const names = proposals
                   .map((s) => fields[s.field_key as keyof typeof fields])
@@ -327,11 +347,12 @@ export function RequirementsPanel({
               fieldKey={k}
               commit={commit}
               onError={onError}
+              readOnly={readOnly}
             />
           ))}
         </section>
         <div className="panel-notice">
-          填写和采用只表示业主偏好，不等于预算、结构或施工安全批准。
+          {readOnly ? '设计师只读入口：需求与家具属性不会在此保存；请在设计师看板提交独立建议。' : '填写和采用只表示业主偏好，不等于预算、结构或施工安全批准。'}
         </div>
       </div>
     </aside>
